@@ -16,7 +16,7 @@ int main(void) {
 	resetRegisters();				// Give a clean workspace
 
 	// Register Setup
-	P1DIR |= BIT2;				// Set P1.2 as output mode
+	P1DIR |= BIT2 + BIT0;		// Set P1.2 as output mode
 	P1SEL |= BIT2;				// Connect Port2 to TimerA0
 	P1REN |= BIT3;				// Enable internal resistor to P1.3
 	P1OUT |= BIT3;				// Set P1.3 resistor as pulled-up
@@ -38,7 +38,6 @@ int main(void) {
 	for(;;){}
 }
 
-
 // Port 1 ISR
 #pragma vector=PORT1_VECTOR
 __interrupt void Port_1(void){
@@ -46,8 +45,13 @@ __interrupt void Port_1(void){
 		toggleTimerA0DutyRatio();
 		__delay_cycles(100000);
 		P1IFG &= ~BIT3;		// Clear P1.3 Interrupt Flag
-
 	}
+}
+
+// Port 1 ISR
+#pragma vector=TIMER_A0_VECTOR
+__interrupt void T(void){
+
 }
 
 void toggleTimerA0DutyRatio(){
