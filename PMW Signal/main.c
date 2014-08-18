@@ -1,4 +1,3 @@
-
 #include <msp430.h>
 #include <msp430g2553.h>
 
@@ -22,11 +21,11 @@ int main(void) {
 	P1REN |= BIT3;				// Enable internal resistor to P1.3
 	P1OUT |= BIT3;				// Set P1.3 resistor as pulled-up
 
-	// Clock Setup
-	TA0CCR0 = TIMER_A0_FREQ; 	// Set the max count of timera0
-	TA0CCR1 = TIMER_A0_DUTY_1;	// Set 'on' count of timera0
-	TA0CCTL1 = OUTMOD_7;		// Use set/reset mode
-	TA0CTL = TASSEL_2 + MC_1;	// something something
+	// Timer_A0 Setup
+	TA0CCR0 = TIMER_A0_FREQ; 	// Set the max count
+	TA0CCR1 = TIMER_A0_DUTY_1;	// Set 'on' count
+	TA0CCTL1 = OUTMOD_7;		// Use reset/set mode
+	TA0CTL = TASSEL_2 + MC_1;	// Use SMCLK in Up-mode
 
 	// Interrupt Setup
 	P1IE |= BIT3; 				// Enable interrupts for P1.3
@@ -51,6 +50,15 @@ __interrupt void Port_1(void){
 	}
 }
 
+void toggleTimerA0DutyRatio(){
+	if(A0DutySelect)
+		TA0CCR1 = TIMER_A0_DUTY_1;
+	else
+		TA0CCR1 = TIMER_A0_DUTY_2;
+
+	A0DutySelect = ~A0DutySelect;
+}
+
 void resetRegisters(){
 	WDTCTL = WDTPW + WDTHOLD;	// Turn off watchdog timer
 	P1OUT &= 0x0;
@@ -60,13 +68,4 @@ void resetRegisters(){
 	P1IE &= 0x0;
 	P1IES &= 0x0;
 	P1IFG &= 0x0;
-}
-
-void toggleTimerA0DutyRatio(){
-	if(A0DutySelect)
-		TA0CCR1 = TIMER_A0_DUTY_1;
-	else
-		TA0CCR1 = TIMER_A0_DUTY_2;
-
-	A0DutySelect = ~A0DutySelect;
 }
