@@ -1,6 +1,5 @@
 #include <msp430.h>
 #include <msp430g2553.h>
-//#include <stdio.h>
 
 // Function headers
 void resetRegisters();
@@ -11,23 +10,29 @@ void accelerate(int direction, int duration);
 
 // Global constants
 const int STEERING_FREQ = 45; // Freq. in Hz
-const int STEERING_FREQ_COUNT = 2700; // TACCRx Count
-const int STEERING_INIT_DUTYRATIO = 1500;
+const int STEERING_FREQ_COUNT = 21600; // TACCRx Count
+const int STEERING_MAX_COUNT = 1800;	// Max Pon count for steering
+const int STEERING_NEUT_COUNT = 1200;	// Neutral Pon count for steering
+const int STEERING_MIN_COUNT = 600;	// Min Pon count for steering
+const int STEERING_INIT_DUTYRATIO = 1000;
 
 const int MOTOR_FREQ = 45; // Freq in hz.
-const int MOTOR_FREQ_COUNT = 2700; // TACCRx Count
-const int MOTOR_INIT_DUTYRATIO = 0;
+const int MOTOR_FREQ_COUNT = 21600; // TACCRx Count
+const int MOTOR_MAX_COUNT = 2100;	// Max Pon count for motor
+const int MOTOR_NEUT_COUNT = 1600;	// Neutral Pon count for motor
+const int MOTOR_MIN_COUNT = 1000;	// Min Pon count for motor
+const int MOTOR_INIT_DUTYRATIO = 2100;
 
 // Global variables
-int steeringWantedDirection = 1500;
-int steeringCurrentDirection = 1500;
+int steeringWantedDirection = 1000;
+int steeringCurrentDirection = 1000;
 int steeringStep = 0;
 
-int motorWantedAcceleration = 0;
-int motorCurrentAcceleration = 0;
+int motorWantedAcceleration = 2100;
+int motorCurrentAcceleration = 2100;
 int motorStep = 0;
 
-int buttonCount = 0;
+int buttonCount = 1;
 
 int main(void) {
 
@@ -46,7 +51,7 @@ int main(void) {
 	TA1CCTL0 = OUTMOD_4 + CCIE;		// output mode = toggle, interrupt enabled
 	TA1CCTL1 = OUTMOD_7;  // output mode = reset/set, interrupt enabled
 	TA1CCTL2 = OUTMOD_7;  // output mode = reset/set, interrupt enabled
-	TA1CTL = TASSEL_2 + MC_1 + ID_3;	// Use SMCLK in Up-mode
+	TA1CTL = TASSEL_2 + MC_1 + ID_0;	// Use SMCLK in Up-mode
 
 	// Interrupt Setup
 	P1IE |= BIT3; 				// Enable interrupts for P1.3
@@ -60,13 +65,14 @@ int main(void) {
 
 	// Don't Return!! Relying on interrupts
 	for(;;){
-		CS(steer(STEERING_FREQ_COUNT * 0.5, 1))
-//		accelerate(MOTOR_FREQ_COUNT * 0.05, 2);
-		__delay_cycles(9000000);
+		__delay_cycles(4000000);
+		CS(steer(STEERING_MAX_COUNT, 4))
+//		accelerate(MOTOR_MAX_COUNT * 0.05, 2);
+		__delay_cycles(4000000);
 
-		CS(steer(STEERING_FREQ_COUNT * 0.05, 1))
-//		accelerate(MOTOR_FREQ_COUNT * 0.8, 2);
-		__delay_cycles(9000000);
+		CS(steer(STEERING_MIN_COUNT, 4))
+//		accelerate(MOTOR_MAX_COUNT * 0.8, 2);
+		__delay_cycles(4000000);
 	}
 }
 // TimerA1 CCR0 ISR
@@ -111,28 +117,29 @@ __interrupt void Port_1(void){
 	if(P1IFG & BIT3){
 		int x = (P1IFG & BIT3);
 		switch (buttonCount){
-			case 0: {
-				accelerate(MOTOR_FREQ_COUNT, 2);
+			case 0: {								//To max Pon for motor
+				accelerate(MOTOR_MAX_COUNT, 1);
 				buttonCount++;
 				break;
 			}
-			case 1: {
-				accelerate(MOTOR_FREQ_COUNT*.1, 2);
+			case 1: {								//To min Pon for motor
+				accelerate(MOTOR_MIN_COUNT, 1);
 				buttonCount++;
 				break;
 			}
-			case 2: {
-				accelerate(MOTOR_FREQ_COUNT*.5, 2);
-				buttonCount++;
+			case 2: {								//To neutral Pon for motor
+				accelerate(MOTOR_NEUT_COUNT, 1);
+				buttonCount = 0;
 				break;
 			}
-			case 3: {
+			case 3: {								//To 0 Pon for motor
 				accelerate(0, 2);
 				buttonCount = 0;
 				break;
 			}
 			default: break;
 		}
+		__delay_cycles(1000000);
 		P1IFG &= ~BIT3;         // Clear P1.3 Interrupt Flag
 	}
 	_EINT();
