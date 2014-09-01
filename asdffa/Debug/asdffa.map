@@ -1,10 +1,10 @@
 ******************************************************************************
                   MSP430 Linker PC v4.3.3                      
 ******************************************************************************
->> Linked Mon Sep 01 18:21:16 2014
+>> Linked Mon Sep 01 19:35:39 2014
 
 OUTPUT FILE NAME:   <asdffa.out>
-ENTRY POINT SYMBOL: "_c_int00"  address: 0000c39c
+ENTRY POINT SYMBOL: "_c_int00"  address: 0000c3dc
 
 
 MEMORY CONFIGURATION
@@ -19,7 +19,7 @@ MEMORY CONFIGURATION
   INFOC                 00001040   00000040  00000000  00000040  RWIX
   INFOB                 00001080   00000040  00000000  00000040  RWIX
   INFOA                 000010c0   00000040  00000000  00000040  RWIX
-  FLASH                 0000c000   00003fe0  0000045a  00003b86  RWIX
+  FLASH                 0000c000   00003fe0  0000049a  00003b46  RWIX
   INT00                 0000ffe0   00000002  00000000  00000002  RWIX
   INT01                 0000ffe2   00000002  00000000  00000002  RWIX
   INT02                 0000ffe4   00000002  00000002  00000000  RWIX
@@ -56,34 +56,34 @@ section   page    origin      length       input sections
                   000003b0    00000002     rts430_eabi.lib : boot.obj (.stack)
                   000003b2    0000004e     --HOLE--
 
-.text      0    0000c000    00000428     
-                  0000c000    000000ca     blink.obj (.text:main)
-                  0000c0ca    00000096     blink.obj (.text:Port_1)
-                  0000c160    00000094     blink.obj (.text:steeringFreqInterrupt)
-                  0000c1f4    00000078     blink.obj (.text:resetRegisters)
-                  0000c26c    0000005e     rts430_eabi.lib : copy_decompress_rle.obj (.text:__TI_decompress_rle_core)
-                  0000c2ca    0000005e                     : autoinit.obj (.text:_auto_init)
-                  0000c328    0000002c                     : div16s.obj (.text)
-                  0000c354    00000024     blink.obj (.text:accelerate)
-                  0000c378    00000024     blink.obj (.text:steer)
-                  0000c39c    0000001a     rts430_eabi.lib : boot.obj (.text:_c_int00_noexit)
-                  0000c3b6    00000016                     : div16u.obj (.text)
-                  0000c3cc    00000014                     : mult16.obj (.text)
-                  0000c3e0    00000012                     : copy_decompress_none.obj (.text:decompress:none:__TI_decompress_none)
-                  0000c3f2    00000012                     : memcpy.obj (.text:memcpy)
-                  0000c404    00000010                     : epilog.obj (.text)
-                  0000c414    00000006                     : isr_trap.obj (.text:__TI_ISR_TRAP)
-                  0000c41a    00000006                     : copy_decompress_rle.obj (.text:decompress:rle24:__TI_decompress_rle24)
-                  0000c420    00000004                     : pre_init.obj (.text:_system_pre_init)
-                  0000c424    00000004                     : exit.obj (.text:abort)
+.text      0    0000c000    00000468     
+                  0000c000    000000d6     blink.obj (.text:Port_1)
+                  0000c0d6    000000ca     blink.obj (.text:main)
+                  0000c1a0    00000094     blink.obj (.text:steeringFreqInterrupt)
+                  0000c234    00000078     blink.obj (.text:resetRegisters)
+                  0000c2ac    0000005e     rts430_eabi.lib : copy_decompress_rle.obj (.text:__TI_decompress_rle_core)
+                  0000c30a    0000005e                     : autoinit.obj (.text:_auto_init)
+                  0000c368    0000002c                     : div16s.obj (.text)
+                  0000c394    00000024     blink.obj (.text:accelerate)
+                  0000c3b8    00000024     blink.obj (.text:steer)
+                  0000c3dc    0000001a     rts430_eabi.lib : boot.obj (.text:_c_int00_noexit)
+                  0000c3f6    00000016                     : div16u.obj (.text)
+                  0000c40c    00000014                     : mult16.obj (.text)
+                  0000c420    00000012                     : copy_decompress_none.obj (.text:decompress:none:__TI_decompress_none)
+                  0000c432    00000012                     : memcpy.obj (.text:memcpy)
+                  0000c444    00000010                     : epilog.obj (.text)
+                  0000c454    00000006                     : isr_trap.obj (.text:__TI_ISR_TRAP)
+                  0000c45a    00000006                     : copy_decompress_rle.obj (.text:decompress:rle24:__TI_decompress_rle24)
+                  0000c460    00000004                     : pre_init.obj (.text:_system_pre_init)
+                  0000c464    00000004                     : exit.obj (.text:abort)
 
-.const     0    0000c428    00000018     
-                  0000c428    00000018     blink.obj (.const)
+.const     0    0000c468    00000018     
+                  0000c468    00000018     blink.obj (.const)
 
-.cinit     0    0000c440    0000001a     
-                  0000c440    00000012     (.cinit..data.load) [load image]
-                  0000c452    00000004     (__TI_handler_table)
-                  0000c456    00000004     (__TI_cinit_table)
+.cinit     0    0000c480    0000001a     
+                  0000c480    00000012     (.cinit..data.load) [load image]
+                  0000c492    00000004     (__TI_handler_table)
+                  0000c496    00000004     (__TI_cinit_table)
 
 PORT1      0    0000ffe4    00000002     
                   0000ffe4    00000002     blink.obj (.int02)
@@ -134,13 +134,13 @@ NMI        0    0000fffc    00000002
 
 LINKER GENERATED COPY TABLES
 
-__TI_cinit_table @ 0000c456 records: 1, size/record: 4, table size: 4
-	.data: load addr=0000c440, load size=00000012 bytes, run addr=00000200, run size=0000000e bytes, compression=copy
+__TI_cinit_table @ 0000c496 records: 1, size/record: 4, table size: 4
+	.data: load addr=0000c480, load size=00000012 bytes, run addr=00000200, run size=0000000e bytes, compression=copy
 
 
 LINKER GENERATED HANDLER TABLE
 
-__TI_handler_table @ 0000c452 records: 2, size/record: 2, table size: 4
+__TI_handler_table @ 0000c492 records: 2, size/record: 2, table size: 4
 	index: 0, handler: __TI_decompress_rle24
 	index: 1, handler: __TI_decompress_none
 
@@ -159,7 +159,7 @@ address    name
 00000057   BCSCTL1
 00000058   BCSCTL2
 00000053   BCSCTL3
-0000c424   C$$EXIT
+0000c464   C$$EXIT
 00000059   CACTL1
 0000005a   CACTL2
 000010fb   CALBC1_12MHZ
@@ -179,12 +179,12 @@ address    name
 00000001   IE2
 00000002   IFG1
 00000003   IFG2
-0000c434   MOTOR_FREQ
-0000c436   MOTOR_FREQ_COUNT
-0000c43e   MOTOR_INIT_DUTYRATIO
-0000c438   MOTOR_MAX_COUNT
-0000c43c   MOTOR_MIN_COUNT
-0000c43a   MOTOR_NEUT_COUNT
+0000c474   MOTOR_FREQ
+0000c476   MOTOR_FREQ_COUNT
+0000c47e   MOTOR_INIT_DUTYRATIO
+0000c478   MOTOR_MAX_COUNT
+0000c47c   MOTOR_MIN_COUNT
+0000c47a   MOTOR_NEUT_COUNT
 00000022   P1DIR
 00000025   P1IE
 00000024   P1IES
@@ -209,13 +209,13 @@ address    name
 00000010   P3REN
 0000001b   P3SEL
 00000043   P3SEL2
-0000c0ca   Port_1
-0000c428   STEERING_FREQ
-0000c42a   STEERING_FREQ_COUNT
-0000c432   STEERING_INIT_DUTYRATIO
-0000c42c   STEERING_MAX_COUNT
-0000c430   STEERING_MIN_COUNT
-0000c42e   STEERING_NEUT_COUNT
+0000c000   Port_1
+0000c468   STEERING_FREQ
+0000c46a   STEERING_FREQ_COUNT
+0000c472   STEERING_INIT_DUTYRATIO
+0000c46c   STEERING_MAX_COUNT
+0000c470   STEERING_MIN_COUNT
+0000c46e   STEERING_NEUT_COUNT
 00000172   TA0CCR0
 00000174   TA0CCR1
 00000176   TA0CCR2
@@ -263,16 +263,16 @@ address    name
 00000120   WDTCTL
 00000400   __STACK_END
 00000050   __STACK_SIZE
-0000c456   __TI_CINIT_Base
-0000c45a   __TI_CINIT_Limit
-0000c452   __TI_Handler_Table_Base
-0000c456   __TI_Handler_Table_Limit
+0000c496   __TI_CINIT_Base
+0000c49a   __TI_CINIT_Limit
+0000c492   __TI_Handler_Table_Base
+0000c496   __TI_Handler_Table_Limit
 UNDEFED    __TI_INITARRAY_Base
 UNDEFED    __TI_INITARRAY_Limit
-0000c414   __TI_ISR_TRAP
+0000c454   __TI_ISR_TRAP
 00000001   __TI_args_main
-0000c3e0   __TI_decompress_none
-0000c41a   __TI_decompress_rle24
+0000c420   __TI_decompress_none
+0000c45a   __TI_decompress_rle24
 00000001   __TI_exit
 0000ffe4   __TI_int02
 0000ffe6   __TI_int03
@@ -288,37 +288,37 @@ UNDEFED    __TI_INITARRAY_Limit
 0000fffc   __TI_int14
 ffffffff   __binit__
 ffffffff   __c_args__
-0000c328   __mspabi_divi
-0000c3b6   __mspabi_divu
-0000c410   __mspabi_func_epilog_1
-0000c40e   __mspabi_func_epilog_2
-0000c40c   __mspabi_func_epilog_3
-0000c40a   __mspabi_func_epilog_4
-0000c408   __mspabi_func_epilog_5
-0000c406   __mspabi_func_epilog_6
-0000c404   __mspabi_func_epilog_7
-0000c3cc   __mspabi_mpyi
-0000c328   __mspabi_remi
-0000c3b6   __mspabi_remu
-0000c2ca   _auto_init
-0000c39c   _c_int00
-0000c39c   _c_int00_noexit
+0000c368   __mspabi_divi
+0000c3f6   __mspabi_divu
+0000c450   __mspabi_func_epilog_1
+0000c44e   __mspabi_func_epilog_2
+0000c44c   __mspabi_func_epilog_3
+0000c44a   __mspabi_func_epilog_4
+0000c448   __mspabi_func_epilog_5
+0000c446   __mspabi_func_epilog_6
+0000c444   __mspabi_func_epilog_7
+0000c40c   __mspabi_mpyi
+0000c368   __mspabi_remi
+0000c3f6   __mspabi_remu
+0000c30a   _auto_init
+0000c3dc   _c_int00
+0000c3dc   _c_int00_noexit
 0000fffe   _reset_vector
 000003b0   _stack
-0000c420   _system_pre_init
-0000c424   abort
-0000c354   accelerate
+0000c460   _system_pre_init
+0000c464   abort
+0000c394   accelerate
 ffffffff   binit
 0000020c   buttonCount
-0000c000   main
-0000c3f2   memcpy
+0000c0d6   main
+0000c432   memcpy
 00000208   motorCurrentAcceleration
 0000020a   motorStep
 00000206   motorWantedAcceleration
-0000c1f4   resetRegisters
-0000c378   steer
+0000c234   resetRegisters
+0000c3b8   steer
 00000202   steeringCurrentDirection
-0000c160   steeringFreqInterrupt
+0000c1a0   steeringFreqInterrupt
 00000204   steeringStep
 00000200   steeringWantedDirection
 
@@ -437,50 +437,50 @@ address    name
 000010fd   CALBC1_8MHZ
 000010fe   CALDCO_1MHZ
 000010ff   CALBC1_1MHZ
-0000c000   main
-0000c0ca   Port_1
-0000c160   steeringFreqInterrupt
-0000c1f4   resetRegisters
-0000c2ca   _auto_init
-0000c328   __mspabi_divi
-0000c328   __mspabi_remi
-0000c354   accelerate
-0000c378   steer
-0000c39c   _c_int00
-0000c39c   _c_int00_noexit
-0000c3b6   __mspabi_divu
-0000c3b6   __mspabi_remu
-0000c3cc   __mspabi_mpyi
-0000c3e0   __TI_decompress_none
-0000c3f2   memcpy
-0000c404   __mspabi_func_epilog_7
-0000c406   __mspabi_func_epilog_6
-0000c408   __mspabi_func_epilog_5
-0000c40a   __mspabi_func_epilog_4
-0000c40c   __mspabi_func_epilog_3
-0000c40e   __mspabi_func_epilog_2
-0000c410   __mspabi_func_epilog_1
-0000c414   __TI_ISR_TRAP
-0000c41a   __TI_decompress_rle24
-0000c420   _system_pre_init
-0000c424   C$$EXIT
-0000c424   abort
-0000c428   STEERING_FREQ
-0000c42a   STEERING_FREQ_COUNT
-0000c42c   STEERING_MAX_COUNT
-0000c42e   STEERING_NEUT_COUNT
-0000c430   STEERING_MIN_COUNT
-0000c432   STEERING_INIT_DUTYRATIO
-0000c434   MOTOR_FREQ
-0000c436   MOTOR_FREQ_COUNT
-0000c438   MOTOR_MAX_COUNT
-0000c43a   MOTOR_NEUT_COUNT
-0000c43c   MOTOR_MIN_COUNT
-0000c43e   MOTOR_INIT_DUTYRATIO
-0000c452   __TI_Handler_Table_Base
-0000c456   __TI_CINIT_Base
-0000c456   __TI_Handler_Table_Limit
-0000c45a   __TI_CINIT_Limit
+0000c000   Port_1
+0000c0d6   main
+0000c1a0   steeringFreqInterrupt
+0000c234   resetRegisters
+0000c30a   _auto_init
+0000c368   __mspabi_divi
+0000c368   __mspabi_remi
+0000c394   accelerate
+0000c3b8   steer
+0000c3dc   _c_int00
+0000c3dc   _c_int00_noexit
+0000c3f6   __mspabi_divu
+0000c3f6   __mspabi_remu
+0000c40c   __mspabi_mpyi
+0000c420   __TI_decompress_none
+0000c432   memcpy
+0000c444   __mspabi_func_epilog_7
+0000c446   __mspabi_func_epilog_6
+0000c448   __mspabi_func_epilog_5
+0000c44a   __mspabi_func_epilog_4
+0000c44c   __mspabi_func_epilog_3
+0000c44e   __mspabi_func_epilog_2
+0000c450   __mspabi_func_epilog_1
+0000c454   __TI_ISR_TRAP
+0000c45a   __TI_decompress_rle24
+0000c460   _system_pre_init
+0000c464   C$$EXIT
+0000c464   abort
+0000c468   STEERING_FREQ
+0000c46a   STEERING_FREQ_COUNT
+0000c46c   STEERING_MAX_COUNT
+0000c46e   STEERING_NEUT_COUNT
+0000c470   STEERING_MIN_COUNT
+0000c472   STEERING_INIT_DUTYRATIO
+0000c474   MOTOR_FREQ
+0000c476   MOTOR_FREQ_COUNT
+0000c478   MOTOR_MAX_COUNT
+0000c47a   MOTOR_NEUT_COUNT
+0000c47c   MOTOR_MIN_COUNT
+0000c47e   MOTOR_INIT_DUTYRATIO
+0000c492   __TI_Handler_Table_Base
+0000c496   __TI_CINIT_Base
+0000c496   __TI_Handler_Table_Limit
+0000c49a   __TI_CINIT_Limit
 0000ffe4   __TI_int02
 0000ffe6   __TI_int03
 0000ffea   __TI_int05

@@ -11,9 +11,9 @@ void accelerate(int direction, int duration);
 // Global constants
 const int STEERING_FREQ = 45; // Freq. in Hz
 const int STEERING_FREQ_COUNT = 21600; // TACCRx Count
-const int STEERING_MAX_COUNT = 1800;	// Max Pon count for steering
-const int STEERING_NEUT_COUNT = 1200;	// Neutral Pon count for steering
-const int STEERING_MIN_COUNT = 600;	// Min Pon count for steering
+const int STEERING_MAX_COUNT = 1700;	// Max Pon count for steering
+const int STEERING_NEUT_COUNT = 1350;	// Neutral Pon count for steering
+const int STEERING_MIN_COUNT = 1000;	// Min Pon count for steering
 const int STEERING_INIT_DUTYRATIO = 1000;
 
 const int MOTOR_FREQ = 45; // Freq in hz.
@@ -115,26 +115,41 @@ __interrupt void steeringFreqInterrupt(void){
 __interrupt void Port_1(void){
 	_DINT();
 	if(P1IFG & BIT3){
-		int x = (P1IFG & BIT3);
-		switch (buttonCount){
+		switch (buttonCount){ // buttonCount currently initialised to 1
 			case 0: {								//To max Pon for motor
-				accelerate(MOTOR_MAX_COUNT, 1);
+				motorWantedAcceleration = MOTOR_MAX_COUNT;
+				motorCurrentAcceleration = MOTOR_MAX_COUNT;
+				CCR2 = MOTOR_MAX_COUNT;
 				buttonCount++;
 				break;
 			}
 			case 1: {								//To min Pon for motor
-				accelerate(MOTOR_MIN_COUNT, 1);
+				motorWantedAcceleration = MOTOR_MIN_COUNT;
+				motorCurrentAcceleration = MOTOR_MIN_COUNT;
+				CCR2 = MOTOR_MIN_COUNT;
 				buttonCount++;
 				break;
 			}
 			case 2: {								//To neutral Pon for motor
-				accelerate(MOTOR_NEUT_COUNT, 1);
-				buttonCount = 0;
+				motorWantedAcceleration = MOTOR_NEUT_COUNT;
+				motorCurrentAcceleration = MOTOR_NEUT_COUNT;
+				CCR2 = MOTOR_NEUT_COUNT;
+				buttonCount++;
 				break;
 			}
 			case 3: {								//To 0 Pon for motor
-				accelerate(0, 2);
-				buttonCount = 0;
+				accelerate(1655, 1);
+				buttonCount++;
+				break;
+			}
+			case 4: {								//To min Pon for motor
+				accelerate(MOTOR_MIN_COUNT, 1);
+				buttonCount++;
+				break;
+			}
+			case 5: {								//To neutral Pon for motor
+				accelerate(MOTOR_NEUT_COUNT, 1);
+				buttonCount = 3;
 				break;
 			}
 			default: break;
