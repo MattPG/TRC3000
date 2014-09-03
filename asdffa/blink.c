@@ -11,9 +11,9 @@ void accelerate(int direction, int duration);
 // Global constants
 const int STEERING_FREQ = 45; // Freq. in Hz
 const int STEERING_FREQ_COUNT = 21600; // TACCRx Count
-const int STEERING_MAX_COUNT = 1700;	// Max Pon count for steering
+const int STEERING_MAX_COUNT = 1750;	// Max Pon count for steering
 const int STEERING_NEUT_COUNT = 1350;	// Neutral Pon count for steering
-const int STEERING_MIN_COUNT = 1000;	// Min Pon count for steering
+const int STEERING_MIN_COUNT = 950;	// Min Pon count for steering
 const int STEERING_INIT_DUTYRATIO = 1000;
 
 const int MOTOR_FREQ = 45; // Freq in hz.
@@ -58,29 +58,28 @@ int main(void) {
 	P1IES |= BIT3;				// Set P1.3 to trigger on falling edge
 	P1IFG &= 0x0;
 
+	// Enable interrupts
 	_EINT();
-	// Power Mode
+
 	// Enter LPM0 with interrupts
 //	_BIS_SR(LPM0_bits | GIE);
 
 	// Don't Return!! Relying on interrupts
 	for(;;){
-		__delay_cycles(4000000);
-		CS(steer(STEERING_MAX_COUNT, 4))
-//		accelerate(MOTOR_MAX_COUNT * 0.05, 2);
-		__delay_cycles(4000000);
+		__delay_cycles(3000000);
+		CS(steer(STEERING_MAX_COUNT, 2))
+		__delay_cycles(2000000);
 
-		CS(steer(STEERING_MIN_COUNT, 4))
-//		accelerate(MOTOR_MAX_COUNT * 0.8, 2);
-		__delay_cycles(4000000);
+		CS(steer(STEERING_MIN_COUNT, 2))
+		__delay_cycles(2000000);
 	}
 }
 // TimerA1 CCR0 ISR
 #pragma vector=TIMER1_A0_VECTOR
 __interrupt void steeringFreqInterrupt(void){
-	_DINT();
+	CS( // Begin critical section
 
-	// Update Steering
+	// Update steering direction
 	int steeringUpdatedDirection = steeringCurrentDirection + steeringStep;
 	if(steeringStep > 0 && steeringUpdatedDirection >= steeringWantedDirection){	// Positive step boundary
 		TACCR1 = steeringWantedDirection;
@@ -93,7 +92,7 @@ __interrupt void steeringFreqInterrupt(void){
 		steeringCurrentDirection = steeringUpdatedDirection;
 	}
 
-	// Update Motor
+	// Update motor acceleration
 	int motorUpdatedAcceleration = motorCurrentAcceleration + motorStep;
 	if(motorStep > 0 && motorUpdatedAcceleration >= motorWantedAcceleration){	// Positive step boundary
 		TACCR2 = motorWantedAcceleration;
@@ -108,12 +107,13 @@ __interrupt void steeringFreqInterrupt(void){
 
 	// TACCR0 interrupt flag is automatically reset
 
-	_EINT();
+	) // End critical section
 }
 
 #pragma vector=PORT1_VECTOR
 __interrupt void Port_1(void){
-	_DINT();
+	CS(	// Begin critical section
+
 	if(P1IFG & BIT3){
 		switch (buttonCount){ // buttonCount currently initialised to 1
 			case 0: {								//To max Pon for motor
@@ -137,7 +137,7 @@ __interrupt void Port_1(void){
 				buttonCount++;
 				break;
 			}
-			case 3: {								//To 0 Pon for motor
+			case 3: {								//To lowest forward Pon for motor
 				accelerate(1655, 1);
 				buttonCount++;
 				break;
@@ -157,18 +157,10 @@ __interrupt void Port_1(void){
 		__delay_cycles(1000000);
 		P1IFG &= ~BIT3;         // Clear P1.3 Interrupt Flag
 	}
-	_EINT();
+
+	) // End critical section
 }
 
-//void toggleTimerA0DutyRatio(){
-//        if(A0DutySelect)
-//                TA0CCR1 = TIMER_A0_DUTY_1;
-//        else
-//                TA0CCR1 = TIMER_A0_DUTY_2;
-//
-//        A0DutySelect = ~A0DutySelect;
-//}
-//
 /*
  * Changes the steering PWM duty ratio to direction over duration seconds
  */
