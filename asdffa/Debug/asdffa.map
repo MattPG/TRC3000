@@ -1,10 +1,10 @@
 ******************************************************************************
                   MSP430 Linker PC v4.3.3                      
 ******************************************************************************
->> Linked Wed Sep 03 17:09:47 2014
+>> Linked Mon Sep 08 13:49:29 2014
 
 OUTPUT FILE NAME:   <asdffa.out>
-ENTRY POINT SYMBOL: "_c_int00"  address: 0000c3dc
+ENTRY POINT SYMBOL: "_c_int00"  address: 0000c490
 
 
 MEMORY CONFIGURATION
@@ -14,12 +14,12 @@ MEMORY CONFIGURATION
   SFR                   00000000   00000010  00000000  00000010  RWIX
   PERIPHERALS_8BIT      00000010   000000f0  00000000  000000f0  RWIX
   PERIPHERALS_16BIT     00000100   00000100  00000000  00000100  RWIX
-  RAM                   00000200   00000200  0000005e  000001a2  RWIX
+  RAM                   00000200   00000200  0000006a  00000196  RWIX
   INFOD                 00001000   00000040  00000000  00000040  RWIX
   INFOC                 00001040   00000040  00000000  00000040  RWIX
   INFOB                 00001080   00000040  00000000  00000040  RWIX
   INFOA                 000010c0   00000040  00000000  00000040  RWIX
-  FLASH                 0000c000   00003fe0  0000049a  00003b46  RWIX
+  FLASH                 0000c000   00003fe0  00000564  00003a7c  RWIX
   INT00                 0000ffe0   00000002  00000000  00000002  RWIX
   INT01                 0000ffe2   00000002  00000000  00000002  RWIX
   INT02                 0000ffe4   00000002  00000002  00000000  RWIX
@@ -46,8 +46,8 @@ section   page    origin      length       input sections
 .init_array 
 *          0    0000c000    00000000     UNINITIALIZED
 
-.data      0    00000200    0000000e     UNINITIALIZED
-                  00000200    0000000e     blink.obj (.data)
+.data      0    00000200    0000001a     UNINITIALIZED
+                  00000200    0000001a     blink.obj (.data)
 
 .TI.persistent 
 *          0    00000200    00000000     UNINITIALIZED
@@ -56,34 +56,37 @@ section   page    origin      length       input sections
                   000003b0    00000002     rts430_eabi.lib : boot.obj (.stack)
                   000003b2    0000004e     --HOLE--
 
-.text      0    0000c000    00000468     
-                  0000c000    000000d6     blink.obj (.text:Port_1)
-                  0000c0d6    000000ca     blink.obj (.text:main)
-                  0000c1a0    00000094     blink.obj (.text:steeringFreqInterrupt)
-                  0000c234    00000078     blink.obj (.text:resetRegisters)
-                  0000c2ac    0000005e     rts430_eabi.lib : copy_decompress_rle.obj (.text:__TI_decompress_rle_core)
-                  0000c30a    0000005e                     : autoinit.obj (.text:_auto_init)
-                  0000c368    0000002c                     : div16s.obj (.text)
-                  0000c394    00000024     blink.obj (.text:accelerate)
-                  0000c3b8    00000024     blink.obj (.text:steer)
-                  0000c3dc    0000001a     rts430_eabi.lib : boot.obj (.text:_c_int00_noexit)
-                  0000c3f6    00000016                     : div16u.obj (.text)
-                  0000c40c    00000014                     : mult16.obj (.text)
-                  0000c420    00000012                     : copy_decompress_none.obj (.text:decompress:none:__TI_decompress_none)
-                  0000c432    00000012                     : memcpy.obj (.text:memcpy)
-                  0000c444    00000010                     : epilog.obj (.text)
-                  0000c454    00000006                     : isr_trap.obj (.text:__TI_ISR_TRAP)
-                  0000c45a    00000006                     : copy_decompress_rle.obj (.text:decompress:rle24:__TI_decompress_rle24)
-                  0000c460    00000004                     : pre_init.obj (.text:_system_pre_init)
-                  0000c464    00000004                     : exit.obj (.text:abort)
+.text      0    0000c000    0000051c     
+                  0000c000    000000c4     blink.obj (.text:Port_1)
+                  0000c0c4    000000c0     blink.obj (.text:main)
+                  0000c184    0000009e     blink.obj (.text:motorCameraInterrupt)
+                  0000c222    00000078     blink.obj (.text:resetRegisters)
+                  0000c29a    0000005e     rts430_eabi.lib : copy_decompress_rle.obj (.text:__TI_decompress_rle_core)
+                  0000c2f8    0000005e                     : autoinit.obj (.text:_auto_init)
+                  0000c356    0000005a     blink.obj (.text:steeringFreqInterrupt)
+                  0000c3b0    00000030     blink.obj (.text:updateAcceleration)
+                  0000c3e0    00000030     blink.obj (.text:updateCamera)
+                  0000c410    00000030     blink.obj (.text:updateSteering)
+                  0000c440    0000002c     rts430_eabi.lib : div16s.obj (.text)
+                  0000c46c    00000024     blink.obj (.text:accelerate)
+                  0000c490    0000001a     rts430_eabi.lib : boot.obj (.text:_c_int00_noexit)
+                  0000c4aa    00000016                     : div16u.obj (.text)
+                  0000c4c0    00000014                     : mult16.obj (.text)
+                  0000c4d4    00000012                     : copy_decompress_none.obj (.text:decompress:none:__TI_decompress_none)
+                  0000c4e6    00000012                     : memcpy.obj (.text:memcpy)
+                  0000c4f8    00000010                     : epilog.obj (.text)
+                  0000c508    00000006                     : isr_trap.obj (.text:__TI_ISR_TRAP)
+                  0000c50e    00000006                     : copy_decompress_rle.obj (.text:decompress:rle24:__TI_decompress_rle24)
+                  0000c514    00000004                     : pre_init.obj (.text:_system_pre_init)
+                  0000c518    00000004                     : exit.obj (.text:abort)
 
-.const     0    0000c468    00000018     
-                  0000c468    00000018     blink.obj (.const)
+.const     0    0000c51c    00000022     
+                  0000c51c    00000022     blink.obj (.const)
 
-.cinit     0    0000c480    0000001a     
-                  0000c480    00000012     (.cinit..data.load) [load image]
-                  0000c492    00000004     (__TI_handler_table)
-                  0000c496    00000004     (__TI_cinit_table)
+.cinit     0    0000c53e    00000026     
+                  0000c53e    0000001e     (.cinit..data.load) [load image]
+                  0000c55c    00000004     (__TI_handler_table)
+                  0000c560    00000004     (__TI_cinit_table)
 
 PORT1      0    0000ffe4    00000002     
                   0000ffe4    00000002     blink.obj (.int02)
@@ -119,7 +122,7 @@ COMPARATORA
 
 TIMER1_A1 
 *          0    0000fff8    00000002     
-                  0000fff8    00000002     rts430_eabi.lib : int12.obj (.int12)
+                  0000fff8    00000002     blink.obj (.int12)
 
 TIMER1_A0 
 *          0    0000fffa    00000002     
@@ -134,13 +137,13 @@ NMI        0    0000fffc    00000002
 
 LINKER GENERATED COPY TABLES
 
-__TI_cinit_table @ 0000c496 records: 1, size/record: 4, table size: 4
-	.data: load addr=0000c480, load size=00000012 bytes, run addr=00000200, run size=0000000e bytes, compression=copy
+__TI_cinit_table @ 0000c560 records: 1, size/record: 4, table size: 4
+	.data: load addr=0000c53e, load size=0000001e bytes, run addr=00000200, run size=0000001a bytes, compression=copy
 
 
 LINKER GENERATED HANDLER TABLE
 
-__TI_handler_table @ 0000c492 records: 2, size/record: 2, table size: 4
+__TI_handler_table @ 0000c55c records: 2, size/record: 2, table size: 4
 	index: 0, handler: __TI_decompress_rle24
 	index: 1, handler: __TI_decompress_none
 
@@ -159,7 +162,7 @@ address    name
 00000057   BCSCTL1
 00000058   BCSCTL2
 00000053   BCSCTL3
-0000c464   C$$EXIT
+0000c518   C$$EXIT
 00000059   CACTL1
 0000005a   CACTL2
 000010fb   CALBC1_12MHZ
@@ -170,21 +173,26 @@ address    name
 000010f8   CALDCO_16MHZ
 000010fe   CALDCO_1MHZ
 000010fc   CALDCO_8MHZ
+0000c538   CAMERA_INIT_DUTYRATIO
+0000c532   CAMERA_MAX_COUNT
+0000c536   CAMERA_MIN_COUNT
+0000c534   CAMERA_NEUT_COUNT
 0000005b   CAPD
 00000056   DCOCTL
+0000c53a   DUTY_MODE
 00000128   FCTL1
 0000012a   FCTL2
 0000012c   FCTL3
+0000c53c   FREQ_MODE
 00000000   IE1
 00000001   IE2
 00000002   IFG1
 00000003   IFG2
-0000c474   MOTOR_FREQ
-0000c476   MOTOR_FREQ_COUNT
-0000c47e   MOTOR_INIT_DUTYRATIO
-0000c478   MOTOR_MAX_COUNT
-0000c47c   MOTOR_MIN_COUNT
-0000c47a   MOTOR_NEUT_COUNT
+0000c530   MOTOR_INIT_DUTYRATIO
+0000c528   MOTOR_MAX_COUNT
+0000c52c   MOTOR_MIN_COUNT
+0000c52e   MOTOR_MIN_FORWARD
+0000c52a   MOTOR_NEUT_COUNT
 00000022   P1DIR
 00000025   P1IE
 00000024   P1IES
@@ -209,13 +217,13 @@ address    name
 00000010   P3REN
 0000001b   P3SEL
 00000043   P3SEL2
+0000c51e   PWM_FREQ
+0000c51c   PWM_FREQ_COUNT
 0000c000   Port_1
-0000c468   STEERING_FREQ
-0000c46a   STEERING_FREQ_COUNT
-0000c472   STEERING_INIT_DUTYRATIO
-0000c46c   STEERING_MAX_COUNT
-0000c470   STEERING_MIN_COUNT
-0000c46e   STEERING_NEUT_COUNT
+0000c526   STEERING_INIT_DUTYRATIO
+0000c520   STEERING_MAX_COUNT
+0000c524   STEERING_MIN_COUNT
+0000c522   STEERING_NEUT_COUNT
 00000172   TA0CCR0
 00000174   TA0CCR1
 00000176   TA0CCR2
@@ -263,16 +271,16 @@ address    name
 00000120   WDTCTL
 00000400   __STACK_END
 00000050   __STACK_SIZE
-0000c496   __TI_CINIT_Base
-0000c49a   __TI_CINIT_Limit
-0000c492   __TI_Handler_Table_Base
-0000c496   __TI_Handler_Table_Limit
+0000c560   __TI_CINIT_Base
+0000c564   __TI_CINIT_Limit
+0000c55c   __TI_Handler_Table_Base
+0000c560   __TI_Handler_Table_Limit
 UNDEFED    __TI_INITARRAY_Base
 UNDEFED    __TI_INITARRAY_Limit
-0000c454   __TI_ISR_TRAP
+0000c508   __TI_ISR_TRAP
 00000001   __TI_args_main
-0000c420   __TI_decompress_none
-0000c45a   __TI_decompress_rle24
+0000c4d4   __TI_decompress_none
+0000c50e   __TI_decompress_rle24
 00000001   __TI_exit
 0000ffe4   __TI_int02
 0000ffe6   __TI_int03
@@ -288,39 +296,48 @@ UNDEFED    __TI_INITARRAY_Limit
 0000fffc   __TI_int14
 ffffffff   __binit__
 ffffffff   __c_args__
-0000c368   __mspabi_divi
-0000c3f6   __mspabi_divu
-0000c450   __mspabi_func_epilog_1
-0000c44e   __mspabi_func_epilog_2
-0000c44c   __mspabi_func_epilog_3
-0000c44a   __mspabi_func_epilog_4
-0000c448   __mspabi_func_epilog_5
-0000c446   __mspabi_func_epilog_6
-0000c444   __mspabi_func_epilog_7
-0000c40c   __mspabi_mpyi
-0000c368   __mspabi_remi
-0000c3f6   __mspabi_remu
-0000c30a   _auto_init
-0000c3dc   _c_int00
-0000c3dc   _c_int00_noexit
+0000c440   __mspabi_divi
+0000c4aa   __mspabi_divu
+0000c504   __mspabi_func_epilog_1
+0000c502   __mspabi_func_epilog_2
+0000c500   __mspabi_func_epilog_3
+0000c4fe   __mspabi_func_epilog_4
+0000c4fc   __mspabi_func_epilog_5
+0000c4fa   __mspabi_func_epilog_6
+0000c4f8   __mspabi_func_epilog_7
+0000c4c0   __mspabi_mpyi
+0000c440   __mspabi_remi
+0000c4aa   __mspabi_remu
+0000c2f8   _auto_init
+0000c490   _c_int00
+0000c490   _c_int00_noexit
 0000fffe   _reset_vector
 000003b0   _stack
-0000c460   _system_pre_init
-0000c464   abort
-0000c394   accelerate
+0000c514   _system_pre_init
+0000c518   abort
+0000c46c   accelerate
 ffffffff   binit
-0000020c   buttonCount
-0000c0d6   main
-0000c432   memcpy
-00000208   motorCurrentAcceleration
-0000020a   motorStep
-00000206   motorWantedAcceleration
-0000c234   resetRegisters
-0000c3b8   steer
-00000202   steeringCurrentDirection
-0000c1a0   steeringFreqInterrupt
-00000204   steeringStep
-00000200   steeringWantedDirection
+00000218   buttonCount
+00000214   cameraCurrentDirection
+00000210   cameraState
+00000216   cameraStep
+00000212   cameraWantedDirection
+0000c0c4   main
+0000c4e6   memcpy
+0000c184   motorCameraInterrupt
+0000020c   motorCurrentAcceleration
+00000208   motorState
+0000020e   motorStep
+0000020a   motorWantedAcceleration
+0000c222   resetRegisters
+00000204   steeringCurrentDirection
+0000c356   steeringFreqInterrupt
+00000200   steeringState
+00000206   steeringStep
+00000202   steeringWantedDirection
+0000c3b0   updateAcceleration
+0000c3e0   updateCamera
+0000c410   updateSteering
 
 
 GLOBAL SYMBOLS: SORTED BY Symbol Address 
@@ -415,13 +432,19 @@ address    name
 000001b2   ADC10CTL1
 000001b4   ADC10MEM
 000001bc   ADC10SA
-00000200   steeringWantedDirection
-00000202   steeringCurrentDirection
-00000204   steeringStep
-00000206   motorWantedAcceleration
-00000208   motorCurrentAcceleration
-0000020a   motorStep
-0000020c   buttonCount
+00000200   steeringState
+00000202   steeringWantedDirection
+00000204   steeringCurrentDirection
+00000206   steeringStep
+00000208   motorState
+0000020a   motorWantedAcceleration
+0000020c   motorCurrentAcceleration
+0000020e   motorStep
+00000210   cameraState
+00000212   cameraWantedDirection
+00000214   cameraCurrentDirection
+00000216   cameraStep
+00000218   buttonCount
 000003b0   _stack
 00000400   __STACK_END
 000010c0   TLV_CHECKSUM
@@ -438,49 +461,57 @@ address    name
 000010fe   CALDCO_1MHZ
 000010ff   CALBC1_1MHZ
 0000c000   Port_1
-0000c0d6   main
-0000c1a0   steeringFreqInterrupt
-0000c234   resetRegisters
-0000c30a   _auto_init
-0000c368   __mspabi_divi
-0000c368   __mspabi_remi
-0000c394   accelerate
-0000c3b8   steer
-0000c3dc   _c_int00
-0000c3dc   _c_int00_noexit
-0000c3f6   __mspabi_divu
-0000c3f6   __mspabi_remu
-0000c40c   __mspabi_mpyi
-0000c420   __TI_decompress_none
-0000c432   memcpy
-0000c444   __mspabi_func_epilog_7
-0000c446   __mspabi_func_epilog_6
-0000c448   __mspabi_func_epilog_5
-0000c44a   __mspabi_func_epilog_4
-0000c44c   __mspabi_func_epilog_3
-0000c44e   __mspabi_func_epilog_2
-0000c450   __mspabi_func_epilog_1
-0000c454   __TI_ISR_TRAP
-0000c45a   __TI_decompress_rle24
-0000c460   _system_pre_init
-0000c464   C$$EXIT
-0000c464   abort
-0000c468   STEERING_FREQ
-0000c46a   STEERING_FREQ_COUNT
-0000c46c   STEERING_MAX_COUNT
-0000c46e   STEERING_NEUT_COUNT
-0000c470   STEERING_MIN_COUNT
-0000c472   STEERING_INIT_DUTYRATIO
-0000c474   MOTOR_FREQ
-0000c476   MOTOR_FREQ_COUNT
-0000c478   MOTOR_MAX_COUNT
-0000c47a   MOTOR_NEUT_COUNT
-0000c47c   MOTOR_MIN_COUNT
-0000c47e   MOTOR_INIT_DUTYRATIO
-0000c492   __TI_Handler_Table_Base
-0000c496   __TI_CINIT_Base
-0000c496   __TI_Handler_Table_Limit
-0000c49a   __TI_CINIT_Limit
+0000c0c4   main
+0000c184   motorCameraInterrupt
+0000c222   resetRegisters
+0000c2f8   _auto_init
+0000c356   steeringFreqInterrupt
+0000c3b0   updateAcceleration
+0000c3e0   updateCamera
+0000c410   updateSteering
+0000c440   __mspabi_divi
+0000c440   __mspabi_remi
+0000c46c   accelerate
+0000c490   _c_int00
+0000c490   _c_int00_noexit
+0000c4aa   __mspabi_divu
+0000c4aa   __mspabi_remu
+0000c4c0   __mspabi_mpyi
+0000c4d4   __TI_decompress_none
+0000c4e6   memcpy
+0000c4f8   __mspabi_func_epilog_7
+0000c4fa   __mspabi_func_epilog_6
+0000c4fc   __mspabi_func_epilog_5
+0000c4fe   __mspabi_func_epilog_4
+0000c500   __mspabi_func_epilog_3
+0000c502   __mspabi_func_epilog_2
+0000c504   __mspabi_func_epilog_1
+0000c508   __TI_ISR_TRAP
+0000c50e   __TI_decompress_rle24
+0000c514   _system_pre_init
+0000c518   C$$EXIT
+0000c518   abort
+0000c51c   PWM_FREQ_COUNT
+0000c51e   PWM_FREQ
+0000c520   STEERING_MAX_COUNT
+0000c522   STEERING_NEUT_COUNT
+0000c524   STEERING_MIN_COUNT
+0000c526   STEERING_INIT_DUTYRATIO
+0000c528   MOTOR_MAX_COUNT
+0000c52a   MOTOR_NEUT_COUNT
+0000c52c   MOTOR_MIN_COUNT
+0000c52e   MOTOR_MIN_FORWARD
+0000c530   MOTOR_INIT_DUTYRATIO
+0000c532   CAMERA_MAX_COUNT
+0000c534   CAMERA_NEUT_COUNT
+0000c536   CAMERA_MIN_COUNT
+0000c538   CAMERA_INIT_DUTYRATIO
+0000c53a   DUTY_MODE
+0000c53c   FREQ_MODE
+0000c55c   __TI_Handler_Table_Base
+0000c560   __TI_CINIT_Base
+0000c560   __TI_Handler_Table_Limit
+0000c564   __TI_CINIT_Limit
 0000ffe4   __TI_int02
 0000ffe6   __TI_int03
 0000ffea   __TI_int05
@@ -500,4 +531,4 @@ ffffffff   binit
 UNDEFED    __TI_INITARRAY_Base
 UNDEFED    __TI_INITARRAY_Limit
 
-[172 symbols]
+[186 symbols]
