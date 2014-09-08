@@ -20,13 +20,13 @@ void updateCamera();
 #define CS(x) _DINT(); x; _EINT();
 
 // Global constants
-const unsigned int PWM_FREQ_COUNT = 32670; // TACCRx Count
-const int PWM_FREQ = 45; // Freq in Hz.
+const unsigned int PWM_FREQ_COUNT = 20000; // TACCRx Count
+const int PWM_FREQ = 50; // Freq in Hz.
 
-const unsigned int STEERING_MAX_COUNT = 2647;	// Max Pon count for steering
-const unsigned int STEERING_NEUT_COUNT = 2042;	// Neutral Pon count for steering
-const unsigned int STEERING_MIN_COUNT = 1437;	// Min Pon count for steering
-const unsigned int STEERING_INIT_DUTYRATIO = 1437;
+const unsigned int STEERING_MAX_COUNT = 1750;	// Max Pon count for steering
+const unsigned int STEERING_NEUT_COUNT = 1350;	// Neutral Pon count for steering
+const unsigned int STEERING_MIN_COUNT = 950;	// Min Pon count for steering
+const unsigned int STEERING_INIT_DUTYRATIO = 9500;
 
 const unsigned int MOTOR_MAX_COUNT = 2100;	// Max Pon count for motor
 const unsigned int MOTOR_NEUT_COUNT = 1600;	// Neutral Pon count for motor
@@ -44,21 +44,21 @@ const int FREQ_MODE = 1;
 
 // Global variables
 int steeringState = 0;
-unsigned int steeringWantedDirection = 1437;
-unsigned int steeringCurrentDirection = 1437;
-unsigned int steeringUpdatedDirection = 0;
+unsigned int steeringWantedDirection = 950;
+unsigned int steeringCurrentDirection = 950;
+unsigned int steeringUpdatedDirection;
 int steeringStep = 0;
 
 int motorState = 0;
 unsigned int motorWantedAcceleration = 2100;
 unsigned int motorCurrentAcceleration = 2100;
-unsigned int motorUpdatedDirection = 0;
+unsigned int motorUpdatedAcceleration;
 int motorStep = 0;
 
 int cameraState = 0;
 unsigned int cameraWantedDirection = 1750;
 unsigned int cameraCurrentDirection = 1750;
-unsigned int cameraUpdatedDirection = 0;
+unsigned int cameraUpdatedDirection;
 int cameraStep = 0;
 
 int buttonCount = 1;
@@ -98,78 +98,78 @@ int main(void) {
 	_EINT();
 
 	// Enter LPM0 with interrupts
-	_BIS_SR(LPM0_bits | GIE);
+	//_BIS_SR(LPM0_bits | GIE);
 
 	// Don't Return!! Relying on interrupts
 	for(;;){
-		__delay_cycles(3000000);
+		//__delay_cycles(3000000);
 		//CS(steer(STEERING_MAX_COUNT, 2))
 		//CS(pan(CAMERA_MIN_COUNT, 2))
-		__delay_cycles(2000000);
+		//__delay_cycles(2000000);
 
 		//CS(steer(STEERING_MIN_COUNT, 2))
 		//CS(pan(STEERING_MAX_COUNT, 2))
-		__delay_cycles(2000000);
+		//__delay_cycles(2000000);
 	}
 }
 
 // ISR FOR STEERING PWM
 #pragma vector=TIMER1_A0_VECTOR
 __interrupt void steeringFreqInterrupt(void){
-	if(steeringState == FREQ_MODE){ // Frequency interrupt
-		CS(
+	CS(
+		if(steeringState == FREQ_MODE){ // Frequency interrupt
+
 			// Update the steering duty ratio
-			updateSteering();
+//			steeringUpdatedDirection = steeringCurrentDirection + steeringStep;
+//			if(steeringStep > 0 && steeringUpdatedDirection >= steeringWantedDirection){	// Positive step boundary
+//				steeringCurrentDirection = steeringWantedDirection;
+//			} else if(steeringStep < 0 && steeringUpdatedDirection <= steeringWantedDirection){		// Negative step boundary
+//				steeringCurrentDirection = steeringWantedDirection;
+//			} else {	// Within interval
+//				steeringCurrentDirection = steeringUpdatedDirection;
+//			}
 
 			// Set next interrupt to occur after duty ratio
 			TA1CCR0 += steeringCurrentDirection;
 			steeringState = DUTY_MODE;
-		)
-	}else if(steeringState == DUTY_MODE){ // Duty interrupt
-		CS(
+		}else if(steeringState == DUTY_MODE){ // Duty interrupt
 			// Set next interrupt to occur at frequency
 			TA1CCR0 += PWM_FREQ_COUNT - steeringCurrentDirection;
 			steeringState = FREQ_MODE;
-		)
-	}
+		}
+	)
 }
 
 // ISR FOR MOTOR AND CAMERA PWMs
 #pragma vector = TIMER1_A1_VECTOR
 __interrupt void motorCameraInterrupt(void){
-	if(motorState == FREQ_MODE){ // Frequency interrupt
-		CS(
-			// Update the motor duty ratio
-			updateAcceleration();
+	CS(
+		if(motorState == FREQ_MODE){ // Frequency interrupt
+				// Update the motor duty ratio
+				//updateAcceleration();
 
-			// Set next interrupt to occur after duty ratio
-			TA1CCR1 += motorCurrentAcceleration;
-			motorState = DUTY_MODE;
-		)
-	}else if(motorState == DUTY_MODE){ // Duty interrupt
-		CS(
-			// Set next interrupt to occur at frequency
-			TA1CCR1 += PWM_FREQ_COUNT - motorCurrentAcceleration;
-			motorState = FREQ_MODE;
-		)
-	}
+				// Set next interrupt to occur after duty ratio
+				TA1CCR1 += motorCurrentAcceleration;
+				motorState = DUTY_MODE;
+		}else if(motorState == DUTY_MODE){ // Duty interrupt
+				// Set next interrupt to occur at frequency
+				TA1CCR1 += PWM_FREQ_COUNT - motorCurrentAcceleration;
+				motorState = FREQ_MODE;
+		}
 
-	if(cameraState == FREQ_MODE){ // Frequency interrupt
-		CS(
-			// Update the camera duty ratio
-			updateCamera();
+		if(cameraState == FREQ_MODE){ // Frequency interrupt
+				// Update the camera duty ratio
+				//updateCamera();
 
-			// Set next interrupt to occur after duty ratio
-			TA1CCR2 += cameraCurrentDirection;
-			cameraState = DUTY_MODE;
-		)
-	}else if(cameraState == DUTY_MODE){ // Duty interrupt
-		CS(
-			// Set next interrupt to occur at frequency
-			TA1CCR2 += PWM_FREQ_COUNT - cameraCurrentDirection;
-			cameraState = FREQ_MODE;
-		)
-	}
+				// Set next interrupt to occur after duty ratio
+				TA1CCR2 += cameraCurrentDirection;
+				cameraState = DUTY_MODE;
+		}else if(cameraState == DUTY_MODE){ // Duty interrupt
+				// Set next interrupt to occur at frequency
+				TA1CCR2 += PWM_FREQ_COUNT - cameraCurrentDirection;
+				cameraState = FREQ_MODE;
+		}
+	)
 }
 
 #pragma vector=PORT1_VECTOR
@@ -248,7 +248,7 @@ void pan(int direction, int duration){
  * Updates the duty ratio for steering PWM
  */
 void updateSteering(){
-	unsigned int steeringUpdatedDirection = steeringCurrentDirection + steeringStep;
+	steeringUpdatedDirection = steeringCurrentDirection + steeringStep;
 	if(steeringStep > 0 && steeringUpdatedDirection >= steeringWantedDirection){	// Positive step boundary
 		steeringCurrentDirection = steeringWantedDirection;
 	} else if(steeringStep < 0 && steeringUpdatedDirection <= steeringWantedDirection){		// Negative step boundary
@@ -262,7 +262,7 @@ void updateSteering(){
  * Updates the duty ratio for motor PWM
  */
 void updateAcceleration(){
-	unsigned int motorUpdatedAcceleration = motorCurrentAcceleration + motorStep;
+		motorUpdatedAcceleration = motorCurrentAcceleration + motorStep;
 		if(motorStep > 0 && motorUpdatedAcceleration >= motorWantedAcceleration){	// Positive step boundary
 			motorCurrentAcceleration = motorWantedAcceleration;
 		} else if(motorStep < 0 && motorUpdatedAcceleration <= motorWantedAcceleration){		// Negative step boundary
@@ -276,7 +276,7 @@ void updateAcceleration(){
  * Updates the duty ratio for camera PWM
  */
 void updateCamera(){
-	 = cameraCurrentDirection + cameraStep;
+	cameraUpdatedDirection = cameraCurrentDirection + cameraStep;
 	if(cameraStep > 0 && cameraUpdatedDirection >= cameraWantedDirection){	// Positive step boundary
 		cameraCurrentDirection = cameraWantedDirection;
 	} else if(cameraStep < 0 && cameraUpdatedDirection <= cameraWantedDirection){		// Negative step boundary
