@@ -15,9 +15,9 @@ static unsigned wanted[3];
 static volatile int step[3];
 static unsigned state[3] = {0};
 static volatile unsigned prevDuty[3];
-static const unsigned MAX[3] = {3550, 3550, 4261};
-static const unsigned MIN[3] = {1927, 1927, 2029};
-static const unsigned NEUT[3] = {2739, 2739, 3145};
+static const unsigned MAX[3] = {3350, 3050, 3833};
+static const unsigned MIN[3] = {1727, 1827, 1916};
+static const unsigned NEUT[3] = {2539, 2539, 2874};
 static unsigned buttonCount = 1;
                                                 //
 #pragma vector = TIMER1_A0_VECTOR               // - ISR for CCR0
@@ -60,11 +60,25 @@ __interrupt void isr_ccr12(void)                //
                                                 //
 static void pwm_init(void)                      //
 {                                               //
-    P2DIR |= (BIT3 | BIT1 | BIT4);              // PWM outputs on P2.0, P2.2, P2.4
+    P2DIR |= (BIT3 | BIT1 | BIT4);              // PWM outputs on P2.3, P2.2, P2.4
     P2SEL |= (BIT3 | BIT1 | BIT4);              // Enable timer compare outputs
     P2SEL2 &= ~(BIT3 | BIT1 | BIT4);            //
+
     P1REN |= BIT3;								// Enable internal resistor to P1.3
     P1OUT |= BIT3;								// Set P1.3 resistor as pulled-up
+
+    P1SEL = BIT1 + BIT2 ;               	    // P1.1 = RXD, P1.2=TXD
+    P1SEL2 = BIT1 + BIT2 ;						// P1.1 = RXD, P1.2=TXD
+
+    UCA0CTL1 |= UCSSEL_2;						// SMCLK
+    UCA0BR0 = 69;								// 8MHz 115200
+    UCA0BR1 = 0;								// 8MHz 115200
+
+    UCA0MCTL = UCBRS0;							// Modulation UCBRSx = 1
+
+    UCA0CTL1 &= ~UCSWRST;						// **Initialize USCI state machine**
+
+    IE2 |= UCA0RXIE;							// Enable USCI_A0 RX interrupt
 
 	P1IE |= BIT3; 								// Enable interrupts for P1.3
 	P1IES |= BIT3;								// Set P1.3 to trigger on falling edge
@@ -80,7 +94,7 @@ static void pwm_init(void)                      //
                                                 //
 int main(void)                                  //
 {
-    static const unsigned int PWM_FREQ_COUNT = 43822;
+    static const unsigned int PWM_FREQ_COUNT = 39430;
     WDTCTL = WDTPW | WDTHOLD;                   //
                                                 //
     DCOCTL = 0;                                 // Run DCO at 8 MHz
@@ -91,7 +105,8 @@ int main(void)                                  //
                                                 //
                                                 // Setup PWM period
     pwm_period[STEERING] = pwm_period[MOTOR] = pwm_period[PAN] = PWM_FREQ_COUNT;
-    pwm_on[STEERING] = 2000;                    // Setup servo times
+    pwm_on[STEERING] = MIN[STEERING];                    // Setup servo times
+
     pwm_on[MOTOR] = MAX[MOTOR];                       //
     pwm_on[PAN] = 4000;                         //
                                                 //
@@ -156,7 +171,7 @@ __interrupt void Port_1(void){
 				break;
 			}
 			case 3: {								//To lowest forward Pon for motor
-				change(3358, 1, MOTOR);
+				change(2900, 1, MOTOR);
 				buttonCount++;
 				break;
 			}
@@ -175,6 +190,14 @@ __interrupt void Port_1(void){
 //		__delay_cycles(500000);
 		P1IFG &= ~BIT3;         // Clear P1.3 Interrupt Flag
 	}
-
 	) // End critical section
+}
+
+#pragma vector=USCIAB0RX_VECTOR
+__interrupt void USCI0RX_ISR(void)
+{
+	CS(
+		while (!(IFG2&UCA0TXIFG));                // USCI_A0 TX buffer ready?
+		UCA0TXBUF = UCA0RXBUF                    // TX -> RXed character
+	)
 }
