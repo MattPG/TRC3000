@@ -1,8 +1,9 @@
 #include <msp430.h>
+#include "stdio.h"
 
 void update(unsigned int pwm);
 void change(int direction, int duration, unsigned int pwm);
-
+void asdf();
 
 #define CS(x) _DINT(); x; _EINT();
 
@@ -15,11 +16,14 @@ static unsigned wanted[3];
 static volatile int step[3];
 static unsigned state[3] = {0};
 static volatile unsigned prevDuty[3];
-static const unsigned MAX[3] = {3350, 3050, 3833};
-static const unsigned MIN[3] = {1727, 1827, 1916};
-static const unsigned NEUT[3] = {2539, 2539, 2874};
+static const unsigned MAX[3] = {4900, 3050, 3833};
+static const unsigned MIN[3] = {1095, 1827, 1916};
+static const unsigned NEUT[3] = {2998, 2539, 2874};
 static unsigned buttonCount = 1;
-                                                //
+volatile char tx_char = 'a';
+volatile char rx_char;
+int i,j = 0;
+//
 #pragma vector = TIMER1_A0_VECTOR               // - ISR for CCR0
 __interrupt void isr_ccr0(void)                 //
 {                                               //
@@ -71,10 +75,11 @@ static void pwm_init(void)                      //
     P1SEL2 = BIT1 + BIT2 ;						// P1.1 = RXD, P1.2=TXD
 
     UCA0CTL1 |= UCSSEL_2;						// SMCLK
-    UCA0BR0 = 69;								// 8MHz 115200
-    UCA0BR1 = 0;								// 8MHz 115200
+    UCA0BR0 = 65;								// 8MHz 9600
+    UCA0BR1 = 3;								// 8MHz 9600
 
-    UCA0MCTL = UCBRS0;							// Modulation UCBRSx = 1
+
+    UCA0MCTL = 0x09;							// Modulation UCBRSx = 4
 
     UCA0CTL1 &= ~UCSWRST;						// **Initialize USCI state machine**
 
@@ -102,22 +107,24 @@ int main(void)                                  //
     DCOCTL  = CALDCO_8MHZ;                      //
                                                 //
     pwm_init();                                 // Initialize PWM
-                                                //
-                                                // Setup PWM period
+
+                                           // Setup PWM period
     pwm_period[STEERING] = pwm_period[MOTOR] = pwm_period[PAN] = PWM_FREQ_COUNT;
     pwm_on[STEERING] = MIN[STEERING];                    // Setup servo times
 
     pwm_on[MOTOR] = MAX[MOTOR];                       //
-    pwm_on[PAN] = 4000;                         //
+    pwm_on[PAN] = NEUT[PAN];                         //
                                                 //
     _enable_interrupts();                       // Enable all interrupts
                                                 //
     for(;;) {                                   //
-    	__delay_cycles(3000000);
-    			CS(change(MAX[STEERING], 2, STEERING))
-    			__delay_cycles(20000000);
-    			CS(change(MIN[STEERING], 2, STEERING))
-    			__delay_cycles(20000000);
+    	__delay_cycles(10000000);
+    			CS(change(MAX[PAN], 2, PAN))
+    			__delay_cycles(40000000);
+    			CS(change(MIN[PAN], 2, PAN))
+    			__delay_cycles(40000000);
+    			IE2 |= UCA0TXIE;
+    			IFG2 |= UCA0TXIFG;
     }                                           //
 }                                               //
 
@@ -168,21 +175,25 @@ __interrupt void Port_1(void){
 				pwm_on[MOTOR] = NEUT[MOTOR];
 				TA1CCR2 = NEUT[MOTOR];
 				buttonCount++;
+				tx_char = 'b';//1k
 				break;
 			}
 			case 3: {								//To lowest forward Pon for motor
 				change(2900, 1, MOTOR);
 				buttonCount++;
+				tx_char = 'c';//10k
 				break;
 			}
 			case 4: {								//To min Pon for motor
 				change(MIN[MOTOR], 1, MOTOR);
 				buttonCount++;
+				tx_char = 'a';//5k
 				break;
 			}
 			case 5: {								//To neutral Pon for motor
 				change(NEUT[MOTOR], 1, MOTOR);
 				buttonCount = 3;
+				tx_char = 'b';//1k
 				break;
 			}
 			default: break;
@@ -196,8 +207,46 @@ __interrupt void Port_1(void){
 #pragma vector=USCIAB0RX_VECTOR
 __interrupt void USCI0RX_ISR(void)
 {
+
+//		while (!(IFG2&UCA0TXIFG));                // USCI_A0 TX buffer ready?
+//		UCA0TXBUF = UCA0RXBUF;                    // TX -> RXed character
+	rx_char = UCA0RXBUF;							//Copy from RX buffer, in doing so we ACK the interrupt as well
+	if (rx_char == 'b')
+	{
+		change(1000, 1, 0);
+
+	}else if(rx_char == 'c'){
+		change(10000, 1, 0);
+	}else if(rx_char == 'a'){
+		change(5000, 1, 0);
+	}
+
+//	__delay_cycles(10000000);
+//	asdf();
+//									//Set the rx_flag to 1
+
+
+}
+
+#pragma vector = USCIAB0TX_VECTOR		//UART TX USCI Interrupt
+__interrupt void USCI0TX_ISR(void)
+{
 	CS(
-		while (!(IFG2&UCA0TXIFG));                // USCI_A0 TX buffer ready?
-		UCA0TXBUF = UCA0RXBUF                    // TX -> RXed character
+//		j++;
+//		if(j%2){
+//			tx_char = 'b';
+//		}else {
+//			tx_char = 'c';
+//		}
+		UCA0TXBUF = tx_char;				//Copy char to the TX Buffer
+		IE2 &= ~UCA0TXIE; 					//Turn off the interrupt to save CPU
+		IFG2 &= ~UCA0TXIFG
 	)
 }
+
+void asdf(){
+	while(1);
+}
+
+
+
