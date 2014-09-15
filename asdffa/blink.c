@@ -64,6 +64,7 @@ __interrupt void isr_ccr12(void)                //
                                                 //
 static void pwm_init(void)                      //
 {                                               //
+
     P2DIR |= (BIT3 | BIT1 | BIT4);              // PWM outputs on P2.3, P2.2, P2.4
     P2SEL |= (BIT3 | BIT1 | BIT4);              // Enable timer compare outputs
     P2SEL2 &= ~(BIT3 | BIT1 | BIT4);            //
@@ -74,16 +75,18 @@ static void pwm_init(void)                      //
     P1SEL = BIT1 + BIT2 ;               	    // P1.1 = RXD, P1.2=TXD
     P1SEL2 = BIT1 + BIT2 ;						// P1.1 = RXD, P1.2=TXD
 
-    UCA0CTL1 |= UCSSEL_2;						// SMCLK
-    UCA0BR0 = 65;								// 8MHz 9600
-    UCA0BR1 = 3;								// 8MHz 9600
+    UCA0CTL1 |= UCSSEL_3;						// SMCLK
+    UCA0BR0 = 52;								// 8MHz 9600
+    UCA0BR1 = 0;								// 8MHz 9600
 
 
-    UCA0MCTL = 0x09;							// Modulation UCBRSx = 4
+    UCA0MCTL = UCBRF_1 | UCBRS_0 | UCOS16;		// Modulation UCBRSx = 0, UCBRFx = 1, UCOS16 enabled
 
     UCA0CTL1 &= ~UCSWRST;						// **Initialize USCI state machine**
 
     IE2 |= UCA0RXIE;							// Enable USCI_A0 RX interrupt
+    IE2 |= UCA0TXIE;
+
 
 	P1IE |= BIT3; 								// Enable interrupts for P1.3
 	P1IES |= BIT3;								// Set P1.3 to trigger on falling edge
@@ -91,7 +94,7 @@ static void pwm_init(void)                      //
 
 
                                                 //
-    TA1CTL = TASSEL_2 | ID_2 | MC_2;            // Setup timer 1 for SMCLK / 8, continuous mode
+    TA1CTL = TASSEL_2 | ID_2 | MC_2;            // Setup timer 1 for SMCLK / 4, continuous mode
                                                 //
     TA1CCTL0 = TA1CCTL1 = TA1CCTL2 = OUTMOD_4 | CCIE; // Set timer output to toggle mode, enable interrupt
     TA1CCR0 = TA1CCR1 = TA1CCR2 = TA1R + 1000;  // Set initial interrupt time
@@ -123,8 +126,10 @@ int main(void)                                  //
     			__delay_cycles(40000000);
     			CS(change(MIN[PAN], 2, PAN))
     			__delay_cycles(40000000);
-    			IE2 |= UCA0TXIE;
-    			IFG2 |= UCA0TXIFG;
+
+   				IFG2 |= UCA0TXIFG;
+
+
     }                                           //
 }                                               //
 
@@ -207,46 +212,31 @@ __interrupt void Port_1(void){
 #pragma vector=USCIAB0RX_VECTOR
 __interrupt void USCI0RX_ISR(void)
 {
+	CS(
+//			while (!(IFG2&UCA0TXIFG)){                // USCI_A0 TX buffer ready?
+				UCA0TXBUF = UCA0RXBUF;                    // TX -> RXed character
+				rx_char = UCA0RXBUF;						//Copy from RX buffer, in doing so we ACK the interrupt as well
+				if (rx_char == 'b'){
+					change(1000, 1, 0);
 
-//		while (!(IFG2&UCA0TXIFG));                // USCI_A0 TX buffer ready?
-//		UCA0TXBUF = UCA0RXBUF;                    // TX -> RXed character
-	rx_char = UCA0RXBUF;							//Copy from RX buffer, in doing so we ACK the interrupt as well
-	if (rx_char == 'b')
-	{
-		change(1000, 1, 0);
+				}else if(rx_char == 'c'){
+					change(10000, 1, 0);
 
-	}else if(rx_char == 'c'){
-		change(10000, 1, 0);
-	}else if(rx_char == 'a'){
-		change(5000, 1, 0);
-	}
+				}else if(rx_char == 'a'){
+					change(5000, 1, 0);
 
-//	__delay_cycles(10000000);
-//	asdf();
-//									//Set the rx_flag to 1
-
-
+				}
+//			}
+	)
 }
 
 #pragma vector = USCIAB0TX_VECTOR		//UART TX USCI Interrupt
 __interrupt void USCI0TX_ISR(void)
 {
 	CS(
-//		j++;
-//		if(j%2){
-//			tx_char = 'b';
-//		}else {
-//			tx_char = 'c';
-//		}
 		UCA0TXBUF = tx_char;				//Copy char to the TX Buffer
-		IE2 &= ~UCA0TXIE; 					//Turn off the interrupt to save CPU
-		IFG2 &= ~UCA0TXIFG
+		IFG2 &= ~UCA0TXIFG					//Interrupt flag cleared
 	)
 }
-
-void asdf(){
-	while(1);
-}
-
 
 
