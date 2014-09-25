@@ -255,24 +255,24 @@ __interrupt void USCI0RX_ISR(void)
 {
 	rx_char = UCA0RXBUF;
 	rx_data = (int) (rx_char - 'a');
-	int rx_num1 = rx_data*20;
-	if (rx_num1 <= 512 && rx_num1 >= 0){
+	int rx_num1 = rx_data*40;
+	if (rx_num1 <= 1024 && rx_num1 >= 0){
 		rx_num = rx_num1;
-		if (rx_num < 256){
-			y = 256 - rx_num;
-			x = pwm_on[PAN] + y;
+//		if (rx_num < 512){
+//			y = 512 - rx_num;
+			x = (pwm_on[PAN] + 512 - rx_num);
 			if (x > MAX[PAN]){
 				x = MAX[PAN];
 			}
-			change(x,3,PAN);
-		}else {
-			y = rx_num - 256;
-			x = pwm_on[PAN] - y;
-			if (x < MIN[PAN]){
+//			change(x,3,PAN);
+//		}else {
+////			y = rx_num - 512;
+//			x = (pwm_on[PAN] - rx_num - 512);
+			else if (x < MIN[PAN]){
 				x = MIN[PAN];
 			}
 			change(x,5,PAN);
-		}
+//		}
 
 	}
 

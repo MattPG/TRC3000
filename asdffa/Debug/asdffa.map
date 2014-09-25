@@ -1,10 +1,10 @@
 ******************************************************************************
                   MSP430 Linker PC v4.3.3                      
 ******************************************************************************
->> Linked Thu Sep 18 11:41:28 2014
+>> Linked Thu Sep 25 11:36:08 2014
 
 OUTPUT FILE NAME:   <asdffa.out>
-ENTRY POINT SYMBOL: "_c_int00"  address: 0000c656
+ENTRY POINT SYMBOL: "_c_int00"  address: 0000c618
 
 
 MEMORY CONFIGURATION
@@ -19,7 +19,7 @@ MEMORY CONFIGURATION
   INFOC                 00001040   00000040  00000000  00000040  RWIX
   INFOB                 00001080   00000040  00000000  00000040  RWIX
   INFOA                 000010c0   00000040  00000000  00000040  RWIX
-  FLASH                 0000c000   00003fe0  00000718  000038c8  RWIX
+  FLASH                 0000c000   00003fe0  000006da  00003906  RWIX
   INT00                 0000ffe0   00000002  00000000  00000002  RWIX
   INT01                 0000ffe2   00000002  00000000  00000002  RWIX
   INT02                 0000ffe4   00000002  00000002  00000000  RWIX
@@ -68,40 +68,40 @@ section   page    origin      length       input sections
                   000003b0    00000002     rts430_eabi.lib : boot.obj (.stack)
                   000003b2    0000004e     --HOLE--
 
-.text      0    0000c000    000006e0     
+.text      0    0000c000    000006a2     
                   0000c000    00000132     blink.obj (.text:Port_1)
-                  0000c132    000000dc     blink.obj (.text:USCI0RX_ISR)
-                  0000c20e    000000d2     blink.obj (.text:isr_ccr12)
-                  0000c2e0    000000a0     blink.obj (.text:main)
-                  0000c380    0000008e     blink.obj (.text:pwm_init)
-                  0000c40e    00000070     blink.obj (.text:isr_ccr0)
-                  0000c47e    00000068     blink.obj (.text:change)
-                  0000c4e6    0000005e     rts430_eabi.lib : copy_decompress_rle.obj (.text:__TI_decompress_rle_core)
-                  0000c544    0000005e                     : autoinit.obj (.text:_auto_init)
-                  0000c5a2    0000005c     blink.obj (.text:update)
-                  0000c5fe    00000058     rts430_eabi.lib : div32u.obj (.text)
-                  0000c656    0000001a                     : boot.obj (.text:_c_int00_noexit)
-                  0000c670    00000014                     : copy_zero_init.obj (.text:decompress:ZI:__TI_zero_init)
-                  0000c684    00000014                     : mult16.obj (.text)
-                  0000c698    00000012                     : copy_decompress_none.obj (.text:decompress:none:__TI_decompress_none)
-                  0000c6aa    00000012                     : memcpy.obj (.text:memcpy)
-                  0000c6bc    00000010                     : epilog.obj (.text)
-                  0000c6cc    00000006                     : isr_trap.obj (.text:__TI_ISR_TRAP)
-                  0000c6d2    00000006                     : copy_decompress_rle.obj (.text:decompress:rle24:__TI_decompress_rle24)
-                  0000c6d8    00000004                     : pre_init.obj (.text:_system_pre_init)
-                  0000c6dc    00000004                     : exit.obj (.text:abort)
+                  0000c132    000000d2     blink.obj (.text:isr_ccr12)
+                  0000c204    000000a0     blink.obj (.text:main)
+                  0000c2a4    0000009e     blink.obj (.text:USCI0RX_ISR)
+                  0000c342    0000008e     blink.obj (.text:pwm_init)
+                  0000c3d0    00000070     blink.obj (.text:isr_ccr0)
+                  0000c440    00000068     blink.obj (.text:change)
+                  0000c4a8    0000005e     rts430_eabi.lib : copy_decompress_rle.obj (.text:__TI_decompress_rle_core)
+                  0000c506    0000005e                     : autoinit.obj (.text:_auto_init)
+                  0000c564    0000005c     blink.obj (.text:update)
+                  0000c5c0    00000058     rts430_eabi.lib : div32u.obj (.text)
+                  0000c618    0000001a                     : boot.obj (.text:_c_int00_noexit)
+                  0000c632    00000014                     : copy_zero_init.obj (.text:decompress:ZI:__TI_zero_init)
+                  0000c646    00000014                     : mult16.obj (.text)
+                  0000c65a    00000012                     : copy_decompress_none.obj (.text:decompress:none:__TI_decompress_none)
+                  0000c66c    00000012                     : memcpy.obj (.text:memcpy)
+                  0000c67e    00000010                     : epilog.obj (.text)
+                  0000c68e    00000006                     : isr_trap.obj (.text:__TI_ISR_TRAP)
+                  0000c694    00000006                     : copy_decompress_rle.obj (.text:decompress:rle24:__TI_decompress_rle24)
+                  0000c69a    00000004                     : pre_init.obj (.text:_system_pre_init)
+                  0000c69e    00000004                     : exit.obj (.text:abort)
 
-.const     0    0000c6e0    0000001c     
-                  0000c6e0    0000000a     blink.obj (.const)
-                  0000c6ea    00000006     blink.obj (.const:MAX)
-                  0000c6f0    00000006     blink.obj (.const:MIN)
-                  0000c6f6    00000006     blink.obj (.const:NEUT)
+.const     0    0000c6a2    0000001c     
+                  0000c6a2    0000000a     blink.obj (.const)
+                  0000c6ac    00000006     blink.obj (.const:MAX)
+                  0000c6b2    00000006     blink.obj (.const:MIN)
+                  0000c6b8    00000006     blink.obj (.const:NEUT)
 
-.cinit     0    0000c6fc    0000001c     
-                  0000c6fc    0000000a     (.cinit..data.load) [load image, compression = rle]
-                  0000c706    00000006     (__TI_handler_table)
-                  0000c70c    00000004     (.cinit..bss.load) [load image, compression = zero_init]
-                  0000c710    00000008     (__TI_cinit_table)
+.cinit     0    0000c6be    0000001c     
+                  0000c6be    0000000a     (.cinit..data.load) [load image, compression = rle]
+                  0000c6c8    00000006     (__TI_handler_table)
+                  0000c6ce    00000004     (.cinit..bss.load) [load image, compression = zero_init]
+                  0000c6d2    00000008     (__TI_cinit_table)
 
 PORT1      0    0000ffe4    00000002     
                   0000ffe4    00000002     blink.obj (.int02)
@@ -152,14 +152,14 @@ NMI        0    0000fffc    00000002
 
 LINKER GENERATED COPY TABLES
 
-__TI_cinit_table @ 0000c710 records: 2, size/record: 4, table size: 8
-	.data: load addr=0000c6fc, load size=0000000a bytes, run addr=00000200, run size=00000026 bytes, compression=rle
-	.bss: load addr=0000c70c, load size=00000004 bytes, run addr=00000226, run size=0000001f bytes, compression=zero_init
+__TI_cinit_table @ 0000c6d2 records: 2, size/record: 4, table size: 8
+	.data: load addr=0000c6be, load size=0000000a bytes, run addr=00000200, run size=00000026 bytes, compression=rle
+	.bss: load addr=0000c6ce, load size=00000004 bytes, run addr=00000226, run size=0000001f bytes, compression=zero_init
 
 
 LINKER GENERATED HANDLER TABLE
 
-__TI_handler_table @ 0000c706 records: 3, size/record: 2, table size: 6
+__TI_handler_table @ 0000c6c8 records: 3, size/record: 2, table size: 6
 	index: 0, handler: __TI_zero_init
 	index: 1, handler: __TI_decompress_rle24
 	index: 2, handler: __TI_decompress_none
@@ -179,7 +179,7 @@ address    name
 00000057   BCSCTL1
 00000058   BCSCTL2
 00000053   BCSCTL3
-0000c6dc   C$$EXIT
+0000c69e   C$$EXIT
 00000059   CACTL1
 0000005a   CACTL2
 000010fb   CALBC1_12MHZ
@@ -268,20 +268,20 @@ address    name
 0000006e   UCB0RXBUF
 0000006d   UCB0STAT
 0000006f   UCB0TXBUF
-0000c132   USCI0RX_ISR
+0000c2a4   USCI0RX_ISR
 00000120   WDTCTL
 00000400   __STACK_END
 00000050   __STACK_SIZE
-0000c710   __TI_CINIT_Base
-0000c718   __TI_CINIT_Limit
-0000c706   __TI_Handler_Table_Base
-0000c70c   __TI_Handler_Table_Limit
+0000c6d2   __TI_CINIT_Base
+0000c6da   __TI_CINIT_Limit
+0000c6c8   __TI_Handler_Table_Base
+0000c6ce   __TI_Handler_Table_Limit
 UNDEFED    __TI_INITARRAY_Base
 UNDEFED    __TI_INITARRAY_Limit
-0000c6cc   __TI_ISR_TRAP
+0000c68e   __TI_ISR_TRAP
 00000001   __TI_args_main
-0000c698   __TI_decompress_none
-0000c6d2   __TI_decompress_rle24
+0000c65a   __TI_decompress_none
+0000c694   __TI_decompress_rle24
 00000001   __TI_exit
 0000ffe4   __TI_int02
 0000ffe6   __TI_int03
@@ -295,40 +295,40 @@ UNDEFED    __TI_INITARRAY_Limit
 0000fff8   __TI_int12
 0000fffa   __TI_int13
 0000fffc   __TI_int14
-0000c670   __TI_zero_init
+0000c632   __TI_zero_init
 ffffffff   __binit__
 ffffffff   __c_args__
-0000c5fe   __mspabi_divul
-0000c6c8   __mspabi_func_epilog_1
-0000c6c6   __mspabi_func_epilog_2
-0000c6c4   __mspabi_func_epilog_3
-0000c6c2   __mspabi_func_epilog_4
-0000c6c0   __mspabi_func_epilog_5
-0000c6be   __mspabi_func_epilog_6
-0000c6bc   __mspabi_func_epilog_7
-0000c684   __mspabi_mpyi
-0000c5fe   __mspabi_remul
-0000c544   _auto_init
-0000c656   _c_int00
-0000c656   _c_int00_noexit
+0000c5c0   __mspabi_divul
+0000c68a   __mspabi_func_epilog_1
+0000c688   __mspabi_func_epilog_2
+0000c686   __mspabi_func_epilog_3
+0000c684   __mspabi_func_epilog_4
+0000c682   __mspabi_func_epilog_5
+0000c680   __mspabi_func_epilog_6
+0000c67e   __mspabi_func_epilog_7
+0000c646   __mspabi_mpyi
+0000c5c0   __mspabi_remul
+0000c506   _auto_init
+0000c618   _c_int00
+0000c618   _c_int00_noexit
 0000fffe   _reset_vector
 000003b0   _stack
-0000c6d8   _system_pre_init
-0000c6dc   abort
+0000c69a   _system_pre_init
+0000c69e   abort
 ffffffff   binit
-0000c47e   change
-0000c40e   isr_ccr0
-0000c20e   isr_ccr12
+0000c440   change
+0000c3d0   isr_ccr0
+0000c132   isr_ccr12
 0000020c   j
-0000c2e0   main
-0000c6aa   memcpy
+0000c204   main
+0000c66c   memcpy
 00000244   rx_char
 00000206   rx_data
 00000208   rx_data1
 00000212   rx_num
 00000204   tx_data
 00000202   tx_sendi
-0000c5a2   update
+0000c564   update
 00000210   x
 0000020a   xl
 0000020e   y
@@ -452,37 +452,37 @@ address    name
 000010fe   CALDCO_1MHZ
 000010ff   CALBC1_1MHZ
 0000c000   Port_1
-0000c132   USCI0RX_ISR
-0000c20e   isr_ccr12
-0000c2e0   main
-0000c40e   isr_ccr0
-0000c47e   change
-0000c544   _auto_init
-0000c5a2   update
-0000c5fe   __mspabi_divul
-0000c5fe   __mspabi_remul
-0000c656   _c_int00
-0000c656   _c_int00_noexit
-0000c670   __TI_zero_init
-0000c684   __mspabi_mpyi
-0000c698   __TI_decompress_none
-0000c6aa   memcpy
-0000c6bc   __mspabi_func_epilog_7
-0000c6be   __mspabi_func_epilog_6
-0000c6c0   __mspabi_func_epilog_5
-0000c6c2   __mspabi_func_epilog_4
-0000c6c4   __mspabi_func_epilog_3
-0000c6c6   __mspabi_func_epilog_2
-0000c6c8   __mspabi_func_epilog_1
-0000c6cc   __TI_ISR_TRAP
-0000c6d2   __TI_decompress_rle24
-0000c6d8   _system_pre_init
-0000c6dc   C$$EXIT
-0000c6dc   abort
-0000c706   __TI_Handler_Table_Base
-0000c70c   __TI_Handler_Table_Limit
-0000c710   __TI_CINIT_Base
-0000c718   __TI_CINIT_Limit
+0000c132   isr_ccr12
+0000c204   main
+0000c2a4   USCI0RX_ISR
+0000c3d0   isr_ccr0
+0000c440   change
+0000c506   _auto_init
+0000c564   update
+0000c5c0   __mspabi_divul
+0000c5c0   __mspabi_remul
+0000c618   _c_int00
+0000c618   _c_int00_noexit
+0000c632   __TI_zero_init
+0000c646   __mspabi_mpyi
+0000c65a   __TI_decompress_none
+0000c66c   memcpy
+0000c67e   __mspabi_func_epilog_7
+0000c680   __mspabi_func_epilog_6
+0000c682   __mspabi_func_epilog_5
+0000c684   __mspabi_func_epilog_4
+0000c686   __mspabi_func_epilog_3
+0000c688   __mspabi_func_epilog_2
+0000c68a   __mspabi_func_epilog_1
+0000c68e   __TI_ISR_TRAP
+0000c694   __TI_decompress_rle24
+0000c69a   _system_pre_init
+0000c69e   C$$EXIT
+0000c69e   abort
+0000c6c8   __TI_Handler_Table_Base
+0000c6ce   __TI_Handler_Table_Limit
+0000c6d2   __TI_CINIT_Base
+0000c6da   __TI_CINIT_Limit
 0000ffe4   __TI_int02
 0000ffe6   __TI_int03
 0000ffea   __TI_int05
