@@ -30,14 +30,15 @@ volatile unsigned int tx_i;
 volatile unsigned int rx_i;
 volatile unsigned char tx_index;
 volatile unsigned int tx_data = 0;
-volatile unsigned int rx_data = 0, rx_data1 = 0;
+volatile int rx_data = 0, rx_data1 = 0;
 volatile unsigned int xl = 0;
 //int check = 0;
 volatile unsigned int i,j = 0;
 volatile unsigned int leftbit;
 volatile unsigned int rightbit;
-volatile unsigned int y = 0, x = 0, rx_num = 0;
+volatile unsigned int x = 0, rx_num = 0;
 int test;
+int rx_num1;
 //
 #pragma vector = TIMER1_A0_VECTOR               // - ISR for CCR0
 __interrupt void isr_ccr0(void)                 //
@@ -150,12 +151,22 @@ int main(void)                                  //
     for(;;) {                                   //
 
     	__delay_cycles(8000000);
-//		CS(change(MIN[PAN],15,PAN))
-//    	__delay_cycles(24000000);
-//////
+//		CS(change(MIN[PAN],5,PAN))
+//    	__delay_cycles(8000000);
+//		CS(change((MIN[PAN]+NEUT[PAN])/2,5,PAN))
+//		__delay_cycles(8000000);
+//		CS(change(NEUT[PAN],5,PAN))
+//    	__delay_cycles(8000000);
+//		CS(change((MAX[PAN]+NEUT[PAN])/2,5,PAN))
+//		__delay_cycles(8000000);
 //		CS(change(MAX[PAN],5,PAN))
 //    	__delay_cycles(8000000);
-
+//		CS(change((MAX[PAN]+NEUT[PAN])/2,5,PAN))
+//		_delay_cycles(8000000);
+//		CS(change(NEUT[PAN],5,PAN))
+//    	__delay_cycles(8000000);
+//		CS(change((MIN[PAN]+NEUT[PAN])/2,5,PAN))
+//		__delay_cycles(8000000);
 //    			CS(change(MAX[STEERING], 2, STEERING))
 //    			__delay_cycles(40000000);
 //    			CS(change(MIN[STEERING], 2, STEERING))
@@ -175,12 +186,16 @@ int main(void)                                  //
  */
 void change(int direction, int duration, unsigned int pwm){
 	static const unsigned int PWM_FREQ = 45;
-	static long int diff = 0, stepdiv = 0;
-	static long unsigned int div = 0;
+	int diff = 0;
+	static int stepdiv = 0;
+	static unsigned int div = 0;
 	wanted[pwm] = direction;
-	diff = (wanted[pwm] - pwm_on[pwm]);
+	int isReverse = wanted[pwm]<pwm_on[pwm];
+
+	diff = isReverse ? pwm_on[pwm]-wanted[pwm] : (wanted[pwm] - pwm_on[pwm]);
 	div = (duration * PWM_FREQ);
 	stepdiv = diff / div ;
+	stepdiv = isReverse ? -stepdiv : stepdiv;
 	step[pwm] = stepdiv*10;
 
 }
@@ -255,16 +270,18 @@ __interrupt void USCI0RX_ISR(void)
 {
 	rx_char = UCA0RXBUF;
 	rx_data = (int)rx_char;
-	rx_data -= 4;
-	int rx_num1 = rx_data<<6;
-	rx_num = rx_num1;
-	x = pwm_on[PAN] + y;
+	rx_num1 = (8 - rx_data) << 6;
+//	rx_num1 = rx_num1*3/2;
+//	rx_data -= 4;
+//	int rx_num1 = rx_data<<6;
+//	rx_num = rx_num1;
+	x = pwm_on[PAN] + rx_num1;
 	if (x > MAX[PAN]){
 		x = MAX[PAN];
 	}else if (x < MIN[PAN]){
 		x = MIN[PAN];
 	}
-	change(x,5,PAN);
+	change(x,3,PAN);
 
 
 
