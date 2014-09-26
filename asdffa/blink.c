@@ -254,27 +254,20 @@ __interrupt void Port_1(void){
 __interrupt void USCI0RX_ISR(void)
 {
 	rx_char = UCA0RXBUF;
-	rx_data = (int) (rx_char - 'a');
-	int rx_num1 = rx_data*20;
-	if (rx_num1 <= 512 && rx_num1 >= 0){
-		rx_num = rx_num1;
-		if (rx_num < 256){
-			y = 256 - rx_num;
-			x = pwm_on[PAN] + y;
-			if (x > MAX[PAN]){
-				x = MAX[PAN];
-			}
-			change(x,3,PAN);
-		}else {
-			y = rx_num - 256;
-			x = pwm_on[PAN] - y;
-			if (x < MIN[PAN]){
-				x = MIN[PAN];
-			}
-			change(x,5,PAN);
-		}
-
+	rx_data = (int)rx_char;
+	rx_data -= 4;
+	int rx_num1 = rx_data<<6;
+	rx_num = rx_num1;
+	x = pwm_on[PAN] + y;
+	if (x > MAX[PAN]){
+		x = MAX[PAN];
+	}else if (x < MIN[PAN]){
+		x = MIN[PAN];
 	}
+	change(x,5,PAN);
+
+
+
 
 //	while (!(IFG2&UCA0TXIFG)){                // USCI_A0 TX buffer ready?
 //		UCA0TXBUF = UCA0RXBUF;                    // TX -> RXed character
