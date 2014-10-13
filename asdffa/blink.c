@@ -24,13 +24,15 @@ void change(int direction, int duration, signed int pwm);
 void asdf();
 void receiveSetup();
 void transmitSetup();
+void heading();
 void turnSouth();
 void turnNorth();
 void track();
-void follow();
+void turn();
 void kill();
 void search();
 void start();
+int us = 0;
 
 #define CS(x) _DINT(); x; _EINT();
 const char KILLED_CHAR = '~';
@@ -48,19 +50,19 @@ const unsigned char TxData[] =              // Table of data to transmit
   0x00,
   0x03
 };
-
+int test2,test1;
 static const signed int STEERING = 1;
 static const signed int MOTOR = 2;
 static const signed int PAN = 0;
 static volatile signed int pwm_on[3];                      // PWM on duratio
-static unsigned pwm_period[3];                  // Total PWM period - on duration + off duration
-static unsigned wanted[3];
+static long int pwm_period[3];                  // Total PWM period - on duration + off duration
+static int wanted[3];
 static volatile int step[3];
 static unsigned state[3] = {0};
-static volatile unsigned prevDuty[3];
-static const unsigned MAX[3] = {4900, 3950, 3833};
-static const unsigned MIN[3] = {1095, 1727, 1916};
-static const unsigned NEUT[3] = {3000, 2839, 2874};
+static volatile int prevDuty[3];
+static const int MAX[3] = {4900, 3950, 3833};
+static const int MIN[3] = {1095, 1727, 1916};
+static const int NEUT[3] = {3000, 2839, 2874};
 static unsigned buttonCount = 0;
 volatile unsigned char rx_char = 0;
 volatile int rx_data = 0, rx_data1 = 0;
@@ -70,11 +72,12 @@ int rx_num1;
 int data_x,data_y,data_z;
 int tx = 1;
 double theta;
+double thetaBuf;
 int killed = 0;
 int go_init = 0;
 int track_init = 0;
 int gotOrientation = 0; // number of times we read the orientation
-
+int state;
 
 //
 #pragma vector = TIMER1_A0_VECTOR               // - ISR for CCR0
@@ -102,6 +105,7 @@ __interrupt void isr_ccr12(void)                //
             	TA1CCR1 += (prevDuty[STEERING] = pwm_on[STEERING]);
             	update(STEERING);
             }
+            test1 = TA1CCR1;
             break;                              //
         case 0x04:                              // - CCR2
             if(state[MOTOR]++ & 1){
@@ -110,6 +114,7 @@ __interrupt void isr_ccr12(void)                //
             	TA1CCR2 += (prevDuty[MOTOR] = pwm_on[MOTOR]);
             	update(MOTOR);
             }
+            test2 = TA1CCR2;
             break;                              //
     }
     									//
@@ -140,7 +145,7 @@ static void pwm_init(void)                      //
     UCB0BR1 = 0;
     UCB0I2CSA = 0x1E; 							// Slave Address is 01Eh
     UCB0CTL1 &= ~UCSWRST; 						// Clear SW rst, resume
-    IE2 |= UCB0TXIE;
+    IE2 |= UCA0TXIE;
 
     UCA0MCTL = UCBRF_0 | UCBRS_4 ;				// Modulation UCBRSx = 0, UCBRFx = 1, UCOS16 enabled
 
@@ -169,7 +174,7 @@ int main(void)                                  //
 {
     static const long int PWM_FREQ_COUNT = 39430;
 
- WDTCTL = WDTPW | WDTHOLD;                   //
+    WDTCTL = 0x5A80;// WDTPW | WDTHOLD;                   //
                                                 //
     DCOCTL = 0;                                 // Run DCO at 8 MHz
     BCSCTL1 = CALBC1_8MHZ;                      //
@@ -182,15 +187,7 @@ int main(void)                                  //
     pwm_on[STEERING] = NEUT[STEERING];                    // Setup servo times
 
     pwm_on[MOTOR] = NEUT[MOTOR];                       //
-//    __delay_cycles(24000000);
-//    pwm_on[MOTOR] = MIN[MOTOR];
-//    wanted[MOTOR] = MIN[MOTOR];
-//    __delay_cycles(16000000);
-//    pwm_on[MOTOR] = NEUT[MOTOR];
-//    wanted[MOTOR] = NEUT[MOTOR];
-//    __delay_cycles(24000000);
-//    change(NEUT,1,MOTOR);
-//    __delay_cycles(400000);
+
     pwm_on[PAN] = NEUT[PAN];                         //
                                                 //
 //    _enable_interrupts();                       // Enable all interrupts
@@ -210,57 +207,58 @@ int main(void)                                  //
 		__bis_SR_register(CPUOFF + GIE); // Enter LPM0 w/interrupts
     	while (UCB0CTL1 & UCTXSTP); // Ensure stop condition got sent
 
+
 //		 Remain in LPM0 until all data are TX'd
 	}
-    for(;;) {                                   //
-//    	wanted[MOTOR] = 3500;
-//    	pwm_on[MOTOR] = 3500;
-//    	TA1CCR2 = 3500;
-//    	change(3000,5,MOTOR);
-//    	__delay_cycles(4000000);
-//    	change(3000,5,MOTOR);
-//    	__delay_cycles(4000000);
-//    	change(3300,5,MOTOR);
-//    	__delay_cycles(4000000);
-//    	change(3500,5,MOTOR);
-//    	__delay_cycles(4000000);
-//    	change(3800,5,MOTOR);
-//    	__delay_cycles(4000000);
-//    	change(MIN[STEERING],5,STEERING);
-//    	change(MIN[PAN],10,PAN);
-//    	__delay_cycles(8000000);
-//    	change(NEUT[STEERING],5,STEERING);
-//    	__delay_cycles(8000000);
-//    	change(MAX[STEERING],5,STEERING);
-//    	change(MAX[PAN],10,PAN);
-//    	__delay_cycles(8000000);
-//    	change(NEUT[STEERING],5,STEERING);
-//    	__delay_cycles(8000000);
+	if (TXByteCtr == 0){
+		RXByteCtr = 6;                          // Load RX byte counter
+		while (UCB0CTL1 & UCTXSTP); // Ensure stop condition got sent
+		tx = 0;
+		receiveSetup();
+		UCB0CTL1 |= UCTXSTT; // I2C RX, start condition
+		__bis_SR_register(CPUOFF + GIE); // Enter LPM0 w/interrupts
+	}
+    for(;;) {
     	//RECEIVE
-    	if(~gotOrientation){
-			while (UCB0CTL1 & UCTXSTP);
-			if (TXByteCtr == 0){
-				RXByteCtr = 6;                          // Load RX byte counter
-				while (UCB0CTL1 & UCTXSTP); // Ensure stop condition got sent
+    	switch (state){
+    	case(1):{
+    		heading();
+    		if(thetaBuf < -120 || thetaBuf > 120){
+    			if (theta > -45 && theta < -15){
+    				CS(change(NEUT[MOTOR],3,MOTOR))
+    				CS(change(NEUT[STEERING],3,STEERING))
+    				CS(change(NEUT[PAN],3,PAN))
+    				__delay_cycles(800000);
+    				state = 2;
+    			}else{
+    				state = 3;
+    			}
+    		}else {
+    			if (theta > -160 && theta < -130){
+    				CS(change(NEUT[MOTOR],3,MOTOR))
+    				CS(change(NEUT[STEERING],3,STEERING))
+    				CS(change(NEUT[PAN],3,PAN))
+    				__delay_cycles(800000);
+    				state = 2;
+    			}else{
+    				state = 3;
+    			}
+    		}
+    	}
+    	case(2):{
+    		track();
 
-				tx = 0;
-				receiveSetup();
-				UCB0CTL1 |= UCTXSTT; // I2C RX, start condition
-				__bis_SR_register(CPUOFF + GIE); // Enter LPM0 w/interrupts
-//				tx = 1;
-//				TXByteCtr = 1;
-//				transmitSetup();
-//				PTxData = (unsigned char *)&(TxData[(sizeof TxData)-1]);
-//				UCB0CTL1 |= UCTR + UCTXSTT; // I2C TX, start condition
-//				__bis_SR_register(CPUOFF + GIE); // Enter LPM0 w/interrupts
-//				while (UCB0CTL1 & UCTXSTP); // Ensure stop condition got sent
-			}
+    	}
+    	case(3):{
+    		turn();
+    		state = 1;
+    	}
     	}
 
+//    	logSetup();
     	// Remain in LPM0 until
     	// all data are RX'd
-    	track();
-//    	follow();
+
     }                                           //
 }                                               //
 
@@ -270,16 +268,13 @@ int main(void)                                  //
 void change(int direction, int duration, signed int pwm){
 	static const signed int PWM_FREQ = 45;
 	int diff = 0;
-	static int stepdiv = 0;
 	static signed int div = 0;
 	wanted[pwm] = direction;
-//	int isReverse = wanted[pwm]<pwm_on[pwm];
 
 	diff = wanted[pwm] - pwm_on[pwm];//isReverse ? pwm_on[pwm]-wanted[pwm] : (wanted[pwm] - pwm_on[pwm]);
+	diff *= 10;
 	div = (duration * PWM_FREQ);
-	stepdiv = diff / div ;
-//	stepdiv = isReverse ? -stepdiv : stepdiv;
-	step[pwm] = stepdiv*10;
+	step[pwm] = diff / div ;
 
 }
 
@@ -371,10 +366,11 @@ __interrupt void USCI0RX_ISR(void)
 			kill();
 			break;
 		}
-//		case('o'):{
-//			start();
-//			break;
-//		}
+		case('A'):{
+			state = 3;
+			turn();
+			break;
+		}
 		default:{
 			if(go_init){
 			CS(if (rx_char >= 32 && rx_char <= 38){
@@ -440,95 +436,68 @@ __interrupt void USCI0TX_ISR(void)
 			theta = atan2(coordy,coordx);				// atan2 to get angle in radians
 			theta = theta * 180 / M_PI;					// convert angle to degrees
 			gotOrientation++;
-//			loopcount++;	// for debugging purposes
 
-
-//			if(loopcount >= 90){
-//				loopcount = 0;
-//			}
 			__bic_SR_register_on_exit(CPUOFF);      // Exit LPM0
 		}
 
 
 	}
+
 }
 
 
 
 void transmitSetup(){
+	us = 1;
 	tx = 1;
 	IE2 &= ~UCB0RXIE;
-	    UCB0CTL1 |= UCSWRST; 						// Enable SW reset
-	    UCB0CTL0 = UCMST + UCMODE_3 + UCSYNC;		// I2C Master,sync mode
-	    UCB0CTL1 = UCSSEL_2 + UCSWRST; 				// Use SMCLK, keep SW rst
-	    UCB0BR0 = 80; 								// fSCL=SMCLK/80=100kHz
-	    UCB0BR1 = 0;
-	    UCB0I2CSA = 0x1E; 							// Slave Address is 01Eh
-	    UCB0CTL1 &= ~UCSWRST; 						// Clear SW rst, resume
-	    IE2 |= UCB0TXIE;
+	IE2 &= ~UCA0TXIE;
+	UCB0CTL1 |= UCSWRST; 						// Enable SW reset
+	UCB0CTL0 = UCMST + UCMODE_3 + UCSYNC;		// I2C Master,sync mode
+	UCB0CTL1 = UCSSEL_2 + UCSWRST; 				// Use SMCLK, keep SW rst
+	UCB0BR0 = 80; 								// fSCL=SMCLK/80=100kHz
+	UCB0BR1 = 0;
+	UCB0I2CSA = 0x1E; 							// Slave Address is 01Eh
+	UCB0CTL1 &= ~UCSWRST; 						// Clear SW rst, resume
+	IE2 |= UCB0TXIE;
 }
 
 void receiveSetup(){
+	us = 1;
 	tx = 0;
 	IE2 &= ~UCB0TXIE;
-	    UCB0CTL1 |= UCSWRST; 						// Enable SW reset
-	    UCB0CTL0 = UCMST + UCMODE_3 + UCSYNC;		// I2C Master,sync mode
-	    UCB0CTL1 = UCSSEL_2 + UCSWRST; 				// Use SMCLK, keep SW rst
-	    UCB0BR0 = 80; 								// fSCL=SMCLK/80=100kHz
-	    UCB0BR1 = 0;
-	    UCB0I2CSA = 0x1E; 							// Slave Address is 01Eh
-	    UCB0CTL1 &= ~UCSWRST; 						// Clear SW rst, resume
-	    IE2 |= UCB0RXIE;
+	IE2 &= ~UCA0TXIE;
+	UCB0CTL1 |= UCSWRST; 						// Enable SW reset
+	UCB0CTL0 = UCMST + UCMODE_3 + UCSYNC;		// I2C Master,sync mode
+	UCB0CTL1 = UCSSEL_2 + UCSWRST; 				// Use SMCLK, keep SW rst
+	UCB0BR0 = 80; 								// fSCL=SMCLK/80=100kHz
+	UCB0BR1 = 0;
+	UCB0I2CSA = 0x1E; 							// Slave Address is 01Eh
+	UCB0CTL1 &= ~UCSWRST; 						// Clear SW rst, resume
+	IE2 |= UCB0RXIE;
 }
+
 
 void turnNorth(){									// acceptable range for north : -15 to -45
 	if (theta>-15){									// if theta is from -15 to +180, turn max and move
 		change(MAX[PAN],1,PAN);
-//		while(theta>-15){
-//			change(MAX[STEERING],3,STEERING);
-//			change(2900,3,MOTOR);
-//		}
-//		change(NEUT[STEERING],3,STEERING);			// when acceptable theta, move steering straight and stop motor
-//		__delay_cycles(4000000);
-//		change(NEUT[MOTOR],3,MOTOR);
+
 	}else{
 		change(MIN[PAN],1,PAN);
-//		while(theta<-45){							// if theta from -45 to -180, turn min and move
-//			change(MIN[STEERING],3,STEERING);
-//			change(2900,3,MOTOR);
-//		}
-//		change(NEUT[STEERING],3,STEERING);			// when acceptable theta, move steering straight and stop motor
-//		__delay_cycles(4000000);
-//		change(NEUT[MOTOR],3,MOTOR);
+
 	}
-//	while((pwm_on[PAN] == NEUT[PAN])&&(pwm_on[STEERING] == NEUT[STEERING])){
-//		change(2900,3,MOTOR);
-//	}
+
 	go_init = 1;
 }
 void turnSouth(){														// same algorithm as north but acceptable range between -130 to -160
 	if (theta > 0 || theta < -160){
 		change(MIN[PAN],1,PAN);
-//		while((theta > 0 || theta < -160)&&(pwm_on[PAN]!=NEUT[PAN])){
-//			change(MAX[STEERING],3,STEERING);
-//			change(2900,3,MOTOR);
-//		}
-//		change(NEUT[STEERING],3,STEERING);
-//		__delay_cycles(4000000);
-//		change(NEUT[MOTOR],3,MOTOR);
+
 	}else if(theta >-130){
 		change(MAX[PAN],1,PAN);
-//		while((theta > -130)&&(pwm_on[PAN]!=NEUT[PAN])){
-//			change(MIN[STEERING],3,STEERING);
-//			change(2900,3,MOTOR);
-//		}
-//		change(NEUT[STEERING],3,STEERING);
-//		__delay_cycles(4000000);
-//		change(NEUT[MOTOR],3,MOTOR);
+
 	}
-//	while((pwm_on[PAN] == NEUT[PAN])&&(pwm_on[STEERING] == NEUT[STEERING])){
-//		change(2900,3,MOTOR);
-//	}
+
 	go_init = 1;
 
 }
@@ -537,8 +506,6 @@ void track(){// if camera not pointing straight, turn car until straight i.e. pw
 
 	if (go_init){										// until pwm_on[PAN] = NEUT[PAN] where pan controlled by bbb
 
-		//		wanted[MOTOR] = 3100;
-//		pwm_on[MOTOR] = 3100;
 		CS(change(2975,3,MOTOR))
 		while(pwm_on[PAN] != NEUT[PAN]){
 
@@ -555,82 +522,78 @@ void track(){// if camera not pointing straight, turn car until straight i.e. pw
 
 			)
 
-			if (ts<(MIN[STEERING]+600)){
-				ts = MIN[STEERING] + 600;
-			}else if(ts>(MAX[STEERING]-600)){
-				ts = MAX[STEERING] - 600;
+			if (ts<(MIN[STEERING]+700)){
+				ts = MIN[STEERING] + 700;
+			}else if(ts>(MAX[STEERING]-700)){
+				ts = MAX[STEERING] - 700;
 			}
-//			change(2975,1,MOTOR);
-//			__delay_cycles(8000000);
+
 			CS(change(2975,3,MOTOR))
 			CS(change(ts,1,STEERING))
-			if((diffpan < (NEUT[PAN] + 600)) && (diffpan > (NEUT[PAN] - 600))){
-				__delay_cycles(20000000);
-			}else{
-				__delay_cycles(10000000);
-			}
-			CS(change(NEUT[MOTOR],3,MOTOR))
-			if((diffpan < (NEUT[PAN] + 600)) && (diffpan > (NEUT[PAN] - 600))){
-							__delay_cycles(400000);
-						}else{
-							__delay_cycles(2000000);
-						}
+			__delay_cycles(4000000);
 
-//			if (pwm_on[PAN] < NEUT[PAN]){
-//				change(MIN[STEERING],3,STEERING);
-//			} else if(pwm_on[PAN] > NEUT[PAN]){
-//				change(MAX[STEERING],3,STEERING);
-//			}
 
 		}
-//		change(NEUT[STEERING],3,STEERING);
-//		__delay_cycles(3000000);
-//		change(NEUT[MOTOR],3,MOTOR);
-//		__delay_cycles(3000000);
-//		track_init = 1;
+
 	}
 
 }
 
-void follow(){
-//	if(track_init){
-//		while(pwm_on[PAN] == NEUT[PAN] && pwm_on[STEERING] == NEUT[STEERING]){
-			change(3000,3,MOTOR);
-//		}
-//	}
+void turn(){
+	CS(change(2975,3,MOTOR))
+	thetaBuf = theta;
+	signed int onPan = pwm_on[PAN];
+	signed int neutPan = NEUT[PAN];
+	signed int ts = (onPan - neutPan);
+	signed int diffpan = ts;
+	ts = ts>>1;
+
+	if (pwm_on(PAN) > NEUT[PAN]){
+		ts -= 500;
+	}else{
+		ts += 500;
+	}
+	ts = NEUT[STEERING] - ts;
+
+
 }
+
+
 
 
 void kill(){
 //	_DINT();
-	_EINT();
-	killed = 1;
-	CS(change(NEUT[PAN],1,PAN))
-//	__delay_cycles(800000);
-	CS(change(NEUT[STEERING],1,STEERING))
-//	__delay_cycles(800000);
-	CS(change(NEUT[MOTOR],3,MOTOR))
-	__delay_cycles(800000);
-
-//	wanted[PAN] = NEUT[PAN];s
+//	_EINT();
+//	killed = 1;
+//	wanted[MOTOR] = NEUT[MOTOR];
+//	pwm_on[MOTOR] = NEUT[MOTOR];
+//	TA1CCR2 = NEUT[MOTOR];
+//	wanted[PAN] = NEUT[PAN];
 //	pwm_on[PAN] = NEUT[PAN];
+//	TA1CCR0 = NEUT[PAN];
 //	wanted[STEERING] = NEUT[STEERING];
 //	pwm_on[STEERING] = NEUT[STEERING];
-//	wanted[MOTOR] = NEUT[MOTOR];
-//	pwm_on[MOTOR] = NEUT[MOTOR];                      // PWM on duratio
-	_DINT();
-	buttonCount = 1;
-	rx_data = 0;
-	x = 0, rx_num = 0;
-	rx_num1 = 0;
-	tx = 1;
-	theta = 0;
-
-	go_init = 0;
-	track_init = 0;
-//	while(killed);
-	__bis_SR_register(CPUOFF);
-
+//	TA1CCR1 = NEUT[STEERING];
+//
+////	wanted[PAN] = NEUT[PAN];s
+////	pwm_on[PAN] = NEUT[PAN];
+////	wanted[STEERING] = NEUT[STEERING];
+////	pwm_on[STEERING] = NEUT[STEERING];
+////	wanted[MOTOR] = NEUT[MOTOR];
+////	pwm_on[MOTOR] = NEUT[MOTOR];                      // PWM on duratio
+//	_DINT();
+//	buttonCount = 0;
+//	rx_data = 0;
+//	x = 0, rx_num = 0;
+//	rx_num1 = 0;
+//	tx = 1;
+//	theta = 0;
+//
+//	go_init = 0;
+//	track_init = 0;
+////	while(killed);
+//	__bis_SR_register(CPUOFF);
+WDTCTL &= 0xFFFF;
 }
 
 void start(){
@@ -647,5 +610,22 @@ void search(){
 	__delay_cycles(3000000);
 }
 
+void heading(){
+	while (UCB0CTL1 & UCTXSTP);
+	if (TXByteCtr == 0){
+		tx = 1;
+		TXByteCtr = 1;
+		transmitSetup();
+		PTxData = (unsigned char *)&(TxData[(sizeof TxData)-1]);
+		UCB0CTL1 |= UCTR + UCTXSTT; // I2C TX, start condition
+		__bis_SR_register(CPUOFF + GIE); // Enter LPM0 w/interrupts
+		while (UCB0CTL1 & UCTXSTP); // Ensure stop condition got sent
+		RXByteCtr = 6;                          // Load RX byte counter
+		tx = 0;
+		receiveSetup();
+		UCB0CTL1 |= UCTXSTT; // I2C RX, start condition
+		__bis_SR_register(CPUOFF + GIE); // Enter LPM0 w/interrupts
+	}
+}
 
 
