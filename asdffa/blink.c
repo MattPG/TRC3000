@@ -65,8 +65,8 @@ static volatile int step[3];
 static unsigned state[3] = {0};
 static volatile int prevDuty[3];
 static const int MAX[3] = {4900, 3950, 3833};
-static const int MIN[3] = {1095, 1727, 1916};
 static const int NEUT[3] = {3000, 2839, 2874};
+static const int MIN[3] = {1095, 1727, 1916};
 static unsigned buttonCount = 0;
 volatile unsigned char rx_char = 0;
 volatile int rx_data = 0, rx_data1 = 0;
@@ -225,6 +225,7 @@ int main(void)                                  //
     	switch (stateM){
 			case(1):{
 //				getTheta();
+//				stateM = 3;
 				break;
 			}
 			case(2):{
@@ -341,7 +342,7 @@ __interrupt void USCI0RX_ISR(void)
 			break;
 		}
 		case('A'):{
-			stateM = 3;
+//			stateM = 3; TODO: PUT BACK
 //			go_init = 0;
 //			turn();
 			break;
@@ -414,7 +415,7 @@ __interrupt void USCI0TX_ISR(void)
 			coordy = (double) coord2[2];				// store x and y headings into doubles
 			coordx = (double) coord2[0];
 			theta = atan2(coordy,coordx);				// atan2 to get angle in radians
-			thetaBuff[buffi] = theta * 180 / M_PI;					// convert angle to degrees
+//			thetaBuff[buffi] = theta * 180 / M_PI;					// convert angle to degrees
 			buffi = (buffi == sampleTheta-1) ? 0 : buffi+1;
 
 			__bic_SR_register_on_exit(CPUOFF);      // Exit LPM0
@@ -505,22 +506,25 @@ void track(){// if camera not pointing straight, turn car until straight i.e. pw
 			CS(change(2975,3,MOTOR))
 		}
 		while(stateM == 2){
-			signed int onPan = pwm_on[PAN];
-			signed int neutPan = NEUT[PAN];
-			signed int ts = (onPan - neutPan);
-			ts = ts>>1;
-			if (ts > 300 || ts < 300){
-				ts = (NEUT[STEERING] - ts)-150;
-			}
-
-			if (ts<(MIN[STEERING]+700)){
-				ts = MIN[STEERING] + 700;
-			}else if(ts>(MAX[STEERING]-700)){
-				ts = MAX[STEERING] - 700;
-			}
+//			signed int onPan = pwm_on[PAN];
+//			signed int neutPan = NEUT[PAN];
+//			signed int ts = (onPan - neutPan);
+////			ts = ts>>1;
+//			if (ts > 300 || ts < 300){
+//				ts = (NEUT[STEERING] - ts)-150;
+//			}
+//
+//			if (ts<(MIN[STEERING]+700)){
+//				ts = MIN[STEERING] + 700;
+//			}else if(ts>(MAX[STEERING]-700)){
+//				ts = MAX[STEERING] - 700;
+//			}
+			int projectPan = pwm_on[PAN]*0.565;
+			int newSteering = 4590 - projectPan;
+			CS(change(newSteering,3,STEERING));
 
 //			CS(change(2975,3,MOTOR))
-			CS(change(ts,3,STEERING))
+//			CS(change(ts,5,STEERING))
 			__delay_cycles(4000000);
 		}
 //		thetaBuf = theta;
