@@ -18,7 +18,6 @@ double coordy;
 double coordx;
 signed int coord2[3];
 //signed int loopcount = 0;
-int evenodd = 0;
 void update(signed int pwm);
 void change(int direction, int duration, signed int pwm);
 void asdf();
@@ -32,11 +31,14 @@ void turn();
 void kill();
 void search();
 void start();
+void getTheta();
 int us = 0;
 
+const unsigned int sampleTheta = 8;
 #define CS(x) _DINT(); x; _EINT();
 const char KILLED_CHAR = '~';
 
+unsigned int startSignal = 0;
 volatile char h[6];
 //unsigned char *PRxData;                     // Pointer to RX data
 signed int RXByteCtr;
@@ -46,11 +48,15 @@ unsigned char *PTxData;                     // Pointer to TX data
 signed int TXByteCtr;
 const unsigned char TxData[] =              // Table of data to transmit
 {
-  0x02,
-  0x00,
-  0x03
+		0x00,
+		0x74,
+		0x02,
+		0x00,
+		0x03
 };
+static const int PWMDIFF = 500;
 int test2,test1;
+double thetaBuff[sampleTheta];
 static const signed int STEERING = 1;
 static const signed int MOTOR = 2;
 static const signed int PAN = 0;
@@ -69,15 +75,12 @@ volatile int rx_data = 0, rx_data1 = 0;
 volatile signed int x = 0, rx_num = 0;
 int test;
 int rx_num1;
-int data_x,data_y,data_z;
 int tx = 1;
 double theta;
 double thetaBuf;
 int killed = 0;
 int go_init = 0;
-int track_init = 0;
-int gotOrientation = 0; // number of times we read the orientation
-int state;
+int stateM;
 
 //
 #pragma vector = TIMER1_A0_VECTOR               // - ISR for CCR0
@@ -218,41 +221,25 @@ int main(void)                                  //
 		UCB0CTL1 |= UCTXSTT; // I2C RX, start condition
 		__bis_SR_register(CPUOFF + GIE); // Enter LPM0 w/interrupts
 	}
+	stateM = 2;
+	_EINT();
     for(;;) {
-    	//RECEIVE
-    	switch (state){
-    	case(1):{
-    		heading();
-    		if(thetaBuf < -120 || thetaBuf > 120){
-    			if (theta > -45 && theta < -15){
-    				CS(change(NEUT[MOTOR],3,MOTOR))
-    				CS(change(NEUT[STEERING],3,STEERING))
-    				CS(change(NEUT[PAN],3,PAN))
-    				__delay_cycles(800000);
-    				state = 2;
-    			}else{
-    				state = 3;
-    			}
-    		}else {
-    			if (theta > -160 && theta < -130){
-    				CS(change(NEUT[MOTOR],3,MOTOR))
-    				CS(change(NEUT[STEERING],3,STEERING))
-    				CS(change(NEUT[PAN],3,PAN))
-    				__delay_cycles(800000);
-    				state = 2;
-    			}else{
-    				state = 3;
-    			}
-    		}
-    	}
-    	case(2):{
-    		track();
-
-    	}
-    	case(3):{
-    		turn();
-    		state = 1;
-    	}
+    	switch (stateM){
+			case(1):{
+//				getTheta();
+				break;
+			}
+			case(2):{
+	//    		go_init = 1;
+				track();
+				// State transition in UART case:'A' to 3
+				break;
+			}
+			case(3):{
+				turn();
+				stateM = 1;
+				break;
+			}
     	}
 
 //    	logSetup();
@@ -348,8 +335,7 @@ __interrupt void Port_1(void){
 
 #pragma vector=USCIAB0RX_VECTOR
 __interrupt void USCI0RX_ISR(void)
-{
-//		CS(
+{//		CS(
 		rx_char = UCA0RXBUF;
 		switch(rx_char){
 		case('n'):{
@@ -367,12 +353,16 @@ __interrupt void USCI0RX_ISR(void)
 			break;
 		}
 		case('A'):{
-			state = 3;
-			turn();
+			stateM = 3;
+			go_init = 0;
+//			turn();
 			break;
 		}
-		default:{
-			if(go_init){
+		case('r'):{
+			go_init = 1;
+		}
+		default:{//		case(' '||'!'||'"'||'#'||'$'||'%'||'&'):{
+//			if(go_init){
 			CS(if (rx_char >= 32 && rx_char <= 38){
 			rx_data = (int)rx_char;
 			rx_num1 = (35-rx_data) << 8;
@@ -383,11 +373,12 @@ __interrupt void USCI0RX_ISR(void)
 			}else if (x < MIN[PAN]){
 				x = MIN[PAN];
 			}
-			change(x,4,PAN))
+			change(x,6,PAN))
 			break;
 			}
-			}
+//			}
 		}
+//		default:{break;}
 		}
 //		)
 
@@ -399,6 +390,7 @@ __interrupt void USCI0RX_ISR(void)
 #pragma vector = USCIAB0TX_VECTOR		//UART TX USCI Interrupt
 __interrupt void USCI0TX_ISR(void)
 {
+	static int buffi = 0;
 	if (tx == 1){
 		if (TXByteCtr != 0){
 			UCB0TXBUF = *(PTxData++);
@@ -434,8 +426,8 @@ __interrupt void USCI0TX_ISR(void)
 			coordy = (double) coord2[2];				// store x and y headings into doubles
 			coordx = (double) coord2[0];
 			theta = atan2(coordy,coordx);				// atan2 to get angle in radians
-			theta = theta * 180 / M_PI;					// convert angle to degrees
-			gotOrientation++;
+			thetaBuff[buffi] = theta * 180 / M_PI;					// convert angle to degrees
+			buffi = (buffi == sampleTheta-1) ? 0 : buffi+1;
 
 			__bic_SR_register_on_exit(CPUOFF);      // Exit LPM0
 		}
@@ -477,6 +469,46 @@ void receiveSetup(){
 	IE2 |= UCB0RXIE;
 }
 
+void getTheta(){
+//    	for(asdf = 1; asdf<10;asdf++){
+//    	heading();
+//    	}
+//    	while(!go_init);
+    	//RECEIVE
+//    	while(rx_char);
+//			CS(change(NEUT[MOTOR], 3, MOTOR))
+    		double sum = 0;
+    		int currTheta;
+    		for(currTheta = 0; currTheta<sampleTheta-1;currTheta++){
+    			heading();
+    			sum += thetaBuff[currTheta];
+    		}
+    		theta = sum/sampleTheta;
+//    		heading(); // Refresh magnetometer values
+    		if(thetaBuf < -90 || thetaBuf > 90){
+    			if (theta > -60 && theta < -30){
+    				CS(change(NEUT[MOTOR],3,MOTOR))
+    				CS(change(NEUT[STEERING],3,STEERING))
+    				CS(change(NEUT[PAN],3,PAN))
+    				__delay_cycles(4000000);
+    				stateM = 2;
+    				go_init = 1;
+    			}else{
+    				stateM = 3;
+    			}
+    		}else {
+    			if (theta > -180 && theta < -145){
+    				CS(change(NEUT[MOTOR],3,MOTOR))
+    				CS(change(NEUT[STEERING],3,STEERING))
+    				CS(change(NEUT[PAN],3,PAN))
+    				__delay_cycles(4000000);
+    				stateM = 2;
+    				go_init = 1;
+    			}else{
+    				stateM = 3;
+    			}
+    		}
+}
 
 void turnNorth(){									// acceptable range for north : -15 to -45
 	if (theta>-15){									// if theta is from -15 to +180, turn max and move
@@ -505,9 +537,9 @@ void turnSouth(){														// same algorithm as north but acceptable range b
 void track(){// if camera not pointing straight, turn car until straight i.e. pwm_on[STEERING] != NEUT[STEERING]
 
 	if (go_init){										// until pwm_on[PAN] = NEUT[PAN] where pan controlled by bbb
-
-		CS(change(2975,3,MOTOR))
-		while(pwm_on[PAN] != NEUT[PAN]){
+		if(pwm_on[MOTOR] != 2975){
+		CS(change(2975,3,MOTOR))}
+		while(stateM == 2){
 
 
 
@@ -515,11 +547,10 @@ void track(){// if camera not pointing straight, turn car until straight i.e. pw
 			signed int onPan = pwm_on[PAN];
 			signed int neutPan = NEUT[PAN];
 			signed int ts = (onPan - neutPan);
-//			signed int neutSteer = NEUT[STEERING];
-			signed int diffpan = ts;
 			ts = ts>>1;
-			ts = NEUT[STEERING] - ts;
-
+			if (ts > 300 || ts < 300){
+			ts = (NEUT[STEERING] - ts)-150;
+			}
 			)
 
 			if (ts<(MIN[STEERING]+700)){
@@ -534,65 +565,37 @@ void track(){// if camera not pointing straight, turn car until straight i.e. pw
 
 
 		}
-
+		thetaBuf = theta;
 	}
 
 }
 
 void turn(){
+	_EINT();
 	CS(change(2975,3,MOTOR))
-	thetaBuf = theta;
+
 	signed int onPan = pwm_on[PAN];
 	signed int neutPan = NEUT[PAN];
 	signed int ts = (onPan - neutPan);
-	signed int diffpan = ts;
-	ts = ts>>1;
-
-	if (pwm_on(PAN) > NEUT[PAN]){
-		ts -= 500;
+//	signed int diffpan = ts;
+	ts = ts*3;
+	ts = ts/5;
+//	ts = ts >>1;
+	if (pwm_on[PAN] > NEUT[PAN]){
+		ts -= PWMDIFF;
 	}else{
-		ts += 500;
+		ts += PWMDIFF;
 	}
 	ts = NEUT[STEERING] - ts;
-
-
+	change(ts,1,STEERING);
+	__delay_cycles(4000000);
 }
 
 
 
 
 void kill(){
-//	_DINT();
-//	_EINT();
-//	killed = 1;
-//	wanted[MOTOR] = NEUT[MOTOR];
-//	pwm_on[MOTOR] = NEUT[MOTOR];
-//	TA1CCR2 = NEUT[MOTOR];
-//	wanted[PAN] = NEUT[PAN];
-//	pwm_on[PAN] = NEUT[PAN];
-//	TA1CCR0 = NEUT[PAN];
-//	wanted[STEERING] = NEUT[STEERING];
-//	pwm_on[STEERING] = NEUT[STEERING];
-//	TA1CCR1 = NEUT[STEERING];
-//
-////	wanted[PAN] = NEUT[PAN];s
-////	pwm_on[PAN] = NEUT[PAN];
-////	wanted[STEERING] = NEUT[STEERING];
-////	pwm_on[STEERING] = NEUT[STEERING];
-////	wanted[MOTOR] = NEUT[MOTOR];
-////	pwm_on[MOTOR] = NEUT[MOTOR];                      // PWM on duratio
-//	_DINT();
-//	buttonCount = 0;
-//	rx_data = 0;
-//	x = 0, rx_num = 0;
-//	rx_num1 = 0;
-//	tx = 1;
-//	theta = 0;
-//
-//	go_init = 0;
-//	track_init = 0;
-////	while(killed);
-//	__bis_SR_register(CPUOFF);
+
 WDTCTL &= 0xFFFF;
 }
 
