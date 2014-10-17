@@ -14,6 +14,11 @@
 #include "stdint.h"
 #include "msp430g2553.h"
 
+// Ensure M_PI is defined
+#ifndef M_PI
+#    define M_PI 3.14159265358979323846
+#endif
+
 double coordy;
 double coordx;
 signed int coord2[3];
@@ -28,7 +33,6 @@ void track();
 void turn();
 void kill();
 void search();
-void start();
 void getTheta();
 int us = 0;
 
@@ -36,7 +40,7 @@ const unsigned int sampleTheta = 8;
 #define CS(x) _DINT(); x; _EINT();
 const char KILLED_CHAR = '~';
 
-unsigned int startSignal = 0;
+int PWMDIFF = 500;
 volatile char h[6];
 //unsigned char *PRxData;                     // Pointer to RX data
 signed int RXByteCtr;
@@ -52,22 +56,20 @@ const unsigned char TxData[] =              // Table of data to transmit
 		0x00,
 		0x03
 };
-static const int PWMDIFF = 500;
-int test2,test1;
 double thetaBuff[sampleTheta];
-static const signed int STEERING = 1;
-static const signed int MOTOR = 2;
-static const signed int PAN = 0;
-static volatile signed int pwm_on[3];                      // PWM on duratio
-static long int pwm_period[3];                  // Total PWM period - on duration + off duration
-static int wanted[3];
-static volatile int step[3];
-static unsigned state[3] = {0};
-static volatile int prevDuty[3];
-static const int MAX[3] = {4900, 3950, 3833};
-static const int NEUT[3] = {3000, 2839, 2874};
-static const int MIN[3] = {1095, 1727, 1916};
-static unsigned buttonCount = 0;
+const int STEERING = 1;
+const int MOTOR = 2;
+const int PAN = 0;
+int pwm_on[3];                      // PWM on duratio
+long int pwm_period[3];                  // Total PWM period - on duration + off duration
+int wanted[3];
+int step[3];
+unsigned state[3] = {0};
+int prevDuty[3];
+const int MAX[3] = {4900, 3950, 3833};
+const int NEUT[3] = {3000, 2839, 2874};
+const int MIN[3] = {1095, 1727, 1916};
+unsigned buttonCount = 0;
 volatile unsigned char rx_char = 0;
 volatile int rx_data = 0, rx_data1 = 0;
 volatile signed int x = 0, rx_num = 0;
@@ -76,28 +78,21 @@ int rx_num1;
 int tx = 1;
 double theta;
 double thetaBuf;
-int killed = 0;
-int go_init = 0;
 int stateM;
+int coneArea;
 
-//
 #pragma vector = TIMER1_A0_VECTOR               // - ISR for CCR0
-__interrupt void isr_ccr0(void)                 //
-{                                               //
-                                            //
+__interrupt void isr_ccr0(void){
     if(state[PAN]++ & 1){
     	TA1CCR0 += (pwm_period[PAN] - prevDuty[PAN]);
     } else{
     	TA1CCR0 += (prevDuty[PAN] = pwm_on[PAN]);
     	update(PAN);
     }
-
 }                                               //
                                                 //
 #pragma vector = TIMER1_A1_VECTOR               // - ISR for CCR1, CCR2
-__interrupt void isr_ccr12(void)                //
-{                                               //
-                                             //
+__interrupt void isr_ccr12(void){
     switch(TA1IV) {                             //
         case 0x02:                              // - CCR1
             if(state[STEERING]++ & 1){
@@ -106,7 +101,6 @@ __interrupt void isr_ccr12(void)                //
             	TA1CCR1 += (prevDuty[STEERING] = pwm_on[STEERING]);
             	update(STEERING);
             }
-            test1 = TA1CCR1;
             break;                              //
         case 0x04:                              // - CCR2
             if(state[MOTOR]++ & 1){
@@ -115,14 +109,11 @@ __interrupt void isr_ccr12(void)                //
             	TA1CCR2 += (prevDuty[MOTOR] = pwm_on[MOTOR]);
             	update(MOTOR);
             }
-            test2 = TA1CCR2;
-            break;                              //
+            break;
     }
-    									//
-}                                               //
-                                                //
-static void pwm_init(void)                      //
-{                                               //
+}
+
+static void pwm_init(void){
 
     P2DIR |= (BIT3 | BIT1 | BIT4);              // PWM outputs on P2.3-ccr0 pan, P2.1-ccr1 steering, P2.4-ccr2 motor
     P2SEL |= (BIT3 | BIT1 | BIT4);              // Enable timer compare outputs
@@ -131,7 +122,7 @@ static void pwm_init(void)                      //
     P1REN |= BIT3;								// Enable internal resistor to P1.3
     P1OUT |= BIT3;								// Set P1.3 resistor as pulled-up
 
-    P1SEL |= BIT1 + BIT2 + BIT6 + BIT7;          // P1.1 = RXD, P1.2 = TXD, P1.6 = SCL, P1.7 = SDA
+    P1SEL |= BIT1 + BIT2 + BIT6 + BIT7;         // P1.1 = RXD, P1.2 = TXD, P1.6 = SCL, P1.7 = SDA
     P1SEL2 |= BIT1 + BIT2 + BIT6 + BIT7 ;		// P1.1 = RXD, P1.2 = TXD, P1.6 = SCL, P1.7 = SDA
     P1DIR |= BIT6 + BIT7;
 
@@ -152,8 +143,7 @@ static void pwm_init(void)                      //
 
     UCA0CTL1 &= ~UCSWRST;						// **Initialize USCI state machine**
 
-    IE2 |= UCA0RXIE;					// Enable USCI_A0 RX, USCI_BO RX & TX interrupt
-
+    IE2 |= UCA0RXIE;							// Enable USCI_A0 RX, USCI_BO RX & TX interrupt
 
 	P1IE |= BIT3; 								// Enable interrupts for P1.3
 	P1IES |= BIT3;								// Set P1.3 to trigger on falling edge
@@ -167,32 +157,23 @@ static void pwm_init(void)                      //
                                                 //
     TA1CCTL0 = TA1CCTL1 = TA1CCTL2 = OUTMOD_4 | CCIE; // Set timer output to toggle mode, enable interrupt
     TA1CCR0 = TA1CCR1 = TA1CCR2 = TA1R + 1000;  // Set initial interrupt time
-//    go_init = 1;
-//    track_init = 0;
 }                                               //
 
-int main(void)                                  //
-{
+int main(void){
     static const long int PWM_FREQ_COUNT = 39430;
 
-    WDTCTL = 0x5A80;// WDTPW | WDTHOLD;                   //
+    WDTCTL = 0x5A80;							// WDTPW | WDTHOLD;
                                                 //
     DCOCTL = 0;                                 // Run DCO at 8 MHz
     BCSCTL1 = CALBC1_8MHZ;                      //
     DCOCTL  = CALDCO_8MHZ;                      //
                                                 //
     pwm_init();                                 // Initialize PWM
-//    asdf();
-                                           // Setup PWM period
+									   	   	    // Setup PWM period
     pwm_period[STEERING] = pwm_period[MOTOR] = pwm_period[PAN] = PWM_FREQ_COUNT;
     pwm_on[STEERING] = NEUT[STEERING];                    // Setup servo times
-
-    pwm_on[MOTOR] = NEUT[MOTOR];                       //
-
-    pwm_on[PAN] = NEUT[PAN];                         //
-                                                //
-//    _enable_interrupts();                       // Enable all interrupts
-                                                //
+    pwm_on[MOTOR] = NEUT[MOTOR];                   		  //
+    pwm_on[PAN] = NEUT[PAN];                       		  //
 
 //    PRxData = (unsigned char *)RxBuffer;    // Start of RX buffer
     RXByteCtr = sizeof h-1;                          // Load RX byte counter
@@ -200,6 +181,8 @@ int main(void)                                  //
     PTxData = (unsigned char *)TxData; // TX array start address
 	TXByteCtr = sizeof TxData; // Load TX byte counter
 	_EINT();
+
+	// Setup Magnetometer
 //	while (TXByteCtr != 0){
 //		//TRANSMIT
 //		//    	_DINT();
@@ -219,8 +202,12 @@ int main(void)                                  //
 //		UCB0CTL1 |= UCTXSTT; // I2C RX, start condition
 //		__bis_SR_register(CPUOFF + GIE); // Enter LPM0 w/interrupts
 //	}
+
+	// Turnoff CPU, w/ interrupts, until we receive an 'r' in UART
+	__bis_SR_register(CPUOFF + GIE);
+
+	// Begin State Machine
 	stateM = 2;
-	_EINT();
     for(;;) {
     	switch (stateM){
 			case(1):{
@@ -229,9 +216,8 @@ int main(void)                                  //
 				break;
 			}
 			case(2):{
-	//    		go_init = 1;
 				track();
-				// State transition in UART case:'A' to 3
+				// State transition in UART case:'A', stateM -> 3
 				break;
 			}
 			case(3):{
@@ -240,23 +226,18 @@ int main(void)                                  //
 				break;
 			}
     	}
-
-//    	logSetup();
-    	// Remain in LPM0 until
-    	// all data are RX'd
-
-    }                                           //
-}                                               //
+    }
+}
 
 /*
  * Changes the steering PWM duty ratio to direction over duration seconds
  */
 void change(int direction, int duration, signed int pwm){
-	static const signed int PWM_FREQ = 45;
+	static const int PWM_FREQ = 45;
 	int diff = 0;
-	static signed int div = 0;
-	wanted[pwm] = direction;
+	int div = 0;
 
+	wanted[pwm] = direction;
 	diff = wanted[pwm] - pwm_on[pwm];//isReverse ? pwm_on[pwm]-wanted[pwm] : (wanted[pwm] - pwm_on[pwm]);
 	diff *= 10;
 	div = (duration * PWM_FREQ);
@@ -265,7 +246,7 @@ void change(int direction, int duration, signed int pwm){
 }
 
 void update(signed int pwm){
-	signed int newVal = pwm_on[pwm] + step[pwm];
+	int newVal = pwm_on[pwm] + step[pwm];
 	if(step[pwm] > 0 && newVal >= wanted[pwm]){	// Positive step boundary
 		pwm_on[pwm] = wanted[pwm];
 	} else if(step[pwm] < 0 && newVal <=  wanted[pwm]){		// Negative step boundary
@@ -274,6 +255,7 @@ void update(signed int pwm){
 		pwm_on[pwm] = newVal;
 	}
 }
+
 #pragma vector=PORT1_VECTOR
 __interrupt void Port_1(void){
 	CS(	// Begin critical section
@@ -303,7 +285,6 @@ __interrupt void Port_1(void){
 				break;
 			}
 			case 3: {								//To lowest forward Pon for motor
-//				change(3500, 100, MOTOR);
 				wanted[MOTOR] = 3100;
 				pwm_on[MOTOR] = 3100;
 				TA1CCR2 = 3100;
@@ -333,52 +314,44 @@ __interrupt void Port_1(void){
 }
 
 #pragma vector=USCIAB0RX_VECTOR
-__interrupt void USCI0RX_ISR(void)
-{//		CS(
+__interrupt void USCI0RX_ISR(void){
 		rx_char = UCA0RXBUF;
 		switch(rx_char){
-		case(KILLED_CHAR):{
-			kill();
-			break;
-		}
-		case('A'):{
-//			stateM = 3; TODO: PUT BACK
-//			go_init = 0;
-//			turn();
-			break;
-		}
-		case('r'):{
-			go_init = 1;
-		}
-		default:{//		case(' '||'!'||'"'||'#'||'$'||'%'||'&'):{
-//			if(go_init){
-			CS(if (rx_char >= 32 && rx_char <= 38){
-			rx_data = (int)rx_char;
-			rx_num1 = (35-rx_data) << 8;
-			x = pwm_on[PAN] + rx_num1;
-
-			if (x > MAX[PAN]){
-				x = MAX[PAN];
-			}else if (x < MIN[PAN]){
-				x = MIN[PAN];
+			case(KILLED_CHAR):{
+				kill();
+				break;
 			}
-			change(x,6,PAN))
-			break;
+			case('A'):{
+	//			stateM = 3; TODO: PUT BACK
+	//			turn();
+				break;
 			}
-//			}
+			case('r'):{
+				__bic_SR_register_on_exit(CPUOFF); // Remove LPM0
+			}
+			default:{
+				if (rx_char >= 32 && rx_char <= 38){ // Process cone centre point
+					rx_data = (int)rx_char;
+					rx_num1 = (35-rx_data) << 8;
+					x = pwm_on[PAN] + rx_num1;
+
+					if (x > MAX[PAN]){
+						x = MAX[PAN];
+					}else if (x < MIN[PAN]){
+						x = MIN[PAN];
+					}
+
+					CS(change(x,6,PAN))
+				}else if(rx_char >=1 && rx_char <= 11){ // Process cone area (1-11)
+					coneArea = (int)rx_char;
+				}
+				break;
+			}
 		}
-//		default:{break;}
-		}
-//		)
-
-
-
-
 }
 
 #pragma vector = USCIAB0TX_VECTOR		//UART TX USCI Interrupt
-__interrupt void USCI0TX_ISR(void)
-{
+__interrupt void USCI0TX_ISR(void){
 	static int buffi = 0;
 	if (tx == 1){
 		if (TXByteCtr != 0){
@@ -392,18 +365,12 @@ __interrupt void USCI0TX_ISR(void)
 		}
 	}else{
 		RXByteCtr--;                              	// Decrement RX byte counter
-		if (RXByteCtr)
-		{
+		if (RXByteCtr){
 //			*PRxData++ = UCB0RXBUF;					// Put all received data into buffer
 			h[5-RXByteCtr] = UCB0RXBUF;				// Simultaneously put received data for current read through i.e. X[MSB] ... Y[LSB] into a smaller array called h
 //
-		}
-		else
-		{
+		}else{
 			UCB0CTL1 |= UCTXSTP;                  // Generate I2C stop condition
-
-
-
 //			*PRxData++ = UCB0RXBUF;                   // Move final RX data to PRxData and h
 			h[5-RXByteCtr] = UCB0RXBUF;
 //
@@ -415,18 +382,13 @@ __interrupt void USCI0TX_ISR(void)
 			coordy = (double) coord2[2];				// store x and y headings into doubles
 			coordx = (double) coord2[0];
 			theta = atan2(coordy,coordx);				// atan2 to get angle in radians
-//			thetaBuff[buffi] = theta * 180 / M_PI;					// convert angle to degrees
+			thetaBuff[buffi] = theta * 180 / M_PI;					// convert angle to degrees
 			buffi = (buffi == sampleTheta-1) ? 0 : buffi+1;
 
 			__bic_SR_register_on_exit(CPUOFF);      // Exit LPM0
 		}
-
-
 	}
-
 }
-
-
 
 void transmitSetup(){
 	us = 1;
@@ -459,13 +421,6 @@ void receiveSetup(){
 }
 
 void getTheta(){
-//    	for(asdf = 1; asdf<10;asdf++){
-//    	heading();
-//    	}
-//    	while(!go_init);
-    	//RECEIVE
-//    	while(rx_char);
-//			CS(change(NEUT[MOTOR], 3, MOTOR))
     		double sum = 0;
     		int currTheta;
     		for(currTheta = 0; currTheta<sampleTheta-1;currTheta++){
@@ -481,7 +436,6 @@ void getTheta(){
     				CS(change(NEUT[PAN],3,PAN))
     				__delay_cycles(4000000);
     				stateM = 2;
-//    				go_init = 1;
     			}else{
     				stateM = 3;
     			}
@@ -492,57 +446,44 @@ void getTheta(){
     				CS(change(NEUT[PAN],3,PAN))
     				__delay_cycles(4000000);
     				stateM = 2;
-//    				go_init = 1;
     			}else{
     				stateM = 3;
     			}
     		}
 }
 
-void track(){// if camera not pointing straight, turn car until straight i.e. pwm_on[STEERING] != NEUT[STEERING]
+void track(){
+	// Non-variable parameters
+	static const float gradient = -0.5848;
 
-	if (go_init){										// until pwm_on[PAN] = NEUT[PAN] where pan controlled by bbb
-		if(wanted[MOTOR] != 2975){
-			CS(change(2975,3,MOTOR))
-		}
-		while(stateM == 2){
-//			signed int onPan = pwm_on[PAN];
-//			signed int neutPan = NEUT[PAN];
-//			signed int ts = (onPan - neutPan);
-////			ts = ts>>1;
-//			if (ts > 300 || ts < 300){
-//				ts = (NEUT[STEERING] - ts)-150;
-//			}
-//
-//			if (ts<(MIN[STEERING]+700)){
-//				ts = MIN[STEERING] + 700;
-//			}else if(ts>(MAX[STEERING]-700)){
-//				ts = MAX[STEERING] - 700;
-//			}
-			int projectPan = pwm_on[PAN]*0.565;
-			int newSteering = 4590 - projectPan;
-			CS(change(newSteering,3,STEERING));
-
-//			CS(change(2975,3,MOTOR))
-//			CS(change(ts,5,STEERING))
-			__delay_cycles(4000000);
-		}
-//		thetaBuf = theta;
+	if(wanted[MOTOR] != 2975){
+		CS(change(2975,3,MOTOR))
 	}
 
+	while(stateM == 2){
+		float alpha = 0.0278*coneArea; // Separation angle in degrees, divided by 180
+		float offset = alpha*MAX[STEERING] + (1-alpha)*MIN[STEERING];
+
+		int newSteerPwm = (pwm_on[PAN] - MAX[PAN])*gradient + offset;
+
+		// Check PWM boundaries
+		if(newSteerPwm > MAX[STEERING]){
+			newSteerPwm = MAX[STEERING];
+		} // Algorithm will never return values below MIN[STEERING]
+
+		CS(change(newSteerPwm,3,STEERING))
+		__delay_cycles(2400000);
+	}
+//	thetaBuf = theta;
 }
 
 void turn(){
-//	_EINT();
-//	CS(change(2975,3,MOTOR))
-
 	signed int onPan = pwm_on[PAN];
 	signed int neutPan = NEUT[PAN];
 	signed int ts = (onPan - neutPan);
-//	signed int diffpan = ts;
-	ts = ts*3;
-	ts = ts/5;
-//	ts = ts >>1;
+	ts *= 3;
+	ts /= 5;
+//	ts >>= 1;
 	if (pwm_on[PAN] > NEUT[PAN]){
 		ts -= PWMDIFF;
 	}else{
@@ -553,21 +494,10 @@ void turn(){
 	__delay_cycles(4000000);
 }
 
-
-
-
 void kill(){
-
-WDTCTL &= 0xFFFF;
+	WDTCTL &= 0xFFFF;
 }
 
-void start(){
-	if(killed){
-		killed = 0;
-		__bis_SR_register(~CPUOFF);
-		main();
-	}
-}
 void search(){
 	change(MIN[PAN],3,PAN);
 	__delay_cycles(3000000);
@@ -592,5 +522,3 @@ void heading(){
 		__bis_SR_register(CPUOFF + GIE); // Enter LPM0 w/interrupts
 	}
 }
-
-
