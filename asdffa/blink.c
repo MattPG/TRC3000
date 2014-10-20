@@ -14,6 +14,9 @@
 #include "stdint.h"
 #include "msp430g2553.h"
 
+//#define TIMED_TURNS
+#define planA
+//#define planC
 // Ensure M_PI is defined
 #ifndef M_PI
 #    define M_PI 3.14159265358979323846
@@ -30,9 +33,7 @@ void receiveSetup();
 void transmitSetup();
 void heading();
 void track();
-void turn();
 void kill();
-void search();
 void getTheta();
 int us = 0;
 
@@ -81,10 +82,30 @@ double thetaBuf;
 int stateM;
 int coneArea;
 
+#ifdef TIMED_TURNS
+int isTiming = 0;
+int timingCount;
+#endif
+
+#ifdef planA
+int isTurning = 0;
+int BufReady = 0;
+int isSouth;
+#endif
+
+#ifdef planC
+int isTurningC = 0;
+#endif
+
 #pragma vector = TIMER1_A0_VECTOR               // - ISR for CCR0
 __interrupt void isr_ccr0(void){
     if(state[PAN]++ & 1){
     	TA1CCR0 += (pwm_period[PAN] - prevDuty[PAN]);
+#ifdef TIMED_TURNS
+    	if(isTiming){
+    		timingCount++;
+    	}
+#endif
     } else{
     	TA1CCR0 += (prevDuty[PAN] = pwm_on[PAN]);
     	update(PAN);
@@ -179,53 +200,41 @@ int main(void){
     RXByteCtr = sizeof h-1;                          // Load RX byte counter
 
     PTxData = (unsigned char *)TxData; // TX array start address
-	TXByteCtr = sizeof TxData; // Load TX byte counter
+	TXByteCtr = sizeof (TxData); // Load TX byte counter
 	_EINT();
-
+#ifdef planA
 	// Setup Magnetometer
-//	while (TXByteCtr != 0){
-//		//TRANSMIT
-//		//    	_DINT();
-//		transmitSetup();
-//		UCB0CTL1 |= UCTR + UCTXSTT; // I2C TX, start condition
-//		__bis_SR_register(CPUOFF + GIE); // Enter LPM0 w/interrupts
-//    	while (UCB0CTL1 & UCTXSTP); // Ensure stop condition got sent
-//
-//
-////		 Remain in LPM0 until all data are TX'd
-//	}
-//	if (TXByteCtr == 0){
-//		RXByteCtr = 6;                          // Load RX byte counter
-//		while (UCB0CTL1 & UCTXSTP); // Ensure stop condition got sent
-//		tx = 0;
-//		receiveSetup();
-//		UCB0CTL1 |= UCTXSTT; // I2C RX, start condition
-//		__bis_SR_register(CPUOFF + GIE); // Enter LPM0 w/interrupts
-//	}
+	while (TXByteCtr != 0){
+		//TRANSMIT
+		//    	_DINT();
+		transmitSetup();
+		UCB0CTL1 |= UCTR + UCTXSTT; // I2C TX, start condition
+		__bis_SR_register(CPUOFF + GIE); // Enter LPM0 w/interrupts
 
+		while (UCB0CTL1 & UCTXSTP); // Ensure stop condition got sent
+
+
+//		 Remain in LPM0 until all data are TX'd
+	}
+	if (TXByteCtr == 0){
+		RXByteCtr = 6;                          // Load RX byte counter
+		while (UCB0CTL1 & UCTXSTP); // Ensure stop condition got sent
+		tx = 0;
+		receiveSetup();
+		UCB0CTL1 |= UCTXSTT; // I2C RX, start condition
+		__bis_SR_register(CPUOFF + GIE); // Enter LPM0 w/interrupts
+	}
+#endif
 	// Turnoff CPU, w/ interrupts, until we receive an 'r' in UART
 	__bis_SR_register(CPUOFF + GIE);
 
 	// Begin State Machine
 	stateM = 2;
     for(;;) {
-    	switch (stateM){
-			case(1):{
-//				getTheta();
-//				stateM = 3;
-				break;
-			}
-			case(2):{
-				track();
+//    	heading();
+    	track();
 				// State transition in UART case:'A', stateM -> 3
-				break;
-			}
-			case(3):{
-				turn();
-//				stateM = 1; TODO: PUT BACK
-				break;
-			}
-    	}
+
     }
 }
 
@@ -321,27 +330,35 @@ __interrupt void USCI0RX_ISR(void){
 				kill();
 				break;
 			}
-			case('A'):{
-	//			stateM = 3; TODO: PUT BACK
-	//			turn();
-				break;
-			}
 			case('r'):{
 				__bic_SR_register_on_exit(CPUOFF); // Remove LPM0
 			}
 			default:{
 				if (rx_char >= 32 && rx_char <= 38){ // Process cone centre point
-					rx_data = (int)rx_char;
-					rx_num1 = (35-rx_data) << 8;
-					x = pwm_on[PAN] + rx_num1;
+#ifdef TIMED_TURNS
+					if(!isTiming){
+#endif
 
-					if (x > MAX[PAN]){
-						x = MAX[PAN];
-					}else if (x < MIN[PAN]){
-						x = MIN[PAN];
+#ifdef planC
+					if(!isTurningC){
+#endif
+						rx_data = (int)rx_char;
+						rx_num1 = (35-rx_data) << 8;
+						x = pwm_on[PAN] + rx_num1;
+
+						if (x > MAX[PAN]){
+							x = MAX[PAN];
+						}else if (x < MIN[PAN]){
+							x = MIN[PAN];
+						}
+						CS(change(x,6,PAN))
+#ifdef planC
 					}
+#endif
 
-					CS(change(x,6,PAN))
+#ifdef TIMED_TURNS
+					}
+#endif
 				}else if(rx_char >=1 && rx_char <= 11){ // Process cone area (1-11)
 					coneArea = (int)rx_char;
 				}
@@ -376,15 +393,17 @@ __interrupt void USCI0TX_ISR(void){
 //
 			signed int ciii;							// counter for converting raw data into headings (from 2 unsigned chars into 1 signed int)
 			for (ciii = 0; ciii<3; ciii++){
-				coord2[ciii] = h[2*ciii]<<8;			// headings stored into coord2
-				coord2[ciii] += h[2*ciii+1];			// shift h[0],h[2],h[4] 8 bits and add h[1],h[3],h[5] to get x,z,y in coord[0],[1],[2] respectively
+				coord2[ciii] = h[2*ciii]<<8 | h[2*ciii+1];			// headings stored into coord2
+				// shift h[0],h[2],h[4] 8 bits and add h[1],h[3],h[5] to get x,z,y in coord[0],[1],[2] respectively
 			}
-			coordy = (double) coord2[2];				// store x and y headings into doubles
-			coordx = (double) coord2[0];
-			theta = atan2(coordy,coordx);				// atan2 to get angle in radians
-			thetaBuff[buffi] = theta * 180 / M_PI;					// convert angle to degrees
+//			coord2[2] = coord2[2]>>2;
+//			coordy = (double) coord2[2];				// store x and y headings into doubles
+//			coordx = (double) coord2[0];
+			theta = atan2((double) coord2[2], (double) coord2[0]);				// atan2 to get angle in radians
+			theta = theta * 180 / M_PI;
+			thetaBuff[buffi] = theta;					// convert angle to degrees
 			buffi = (buffi == sampleTheta-1) ? 0 : buffi+1;
-
+			TXByteCtr = 0;
 			__bic_SR_register_on_exit(CPUOFF);      // Exit LPM0
 		}
 	}
@@ -419,90 +438,110 @@ void receiveSetup(){
 	UCB0CTL1 &= ~UCSWRST; 						// Clear SW rst, resume
 	IE2 |= UCB0RXIE;
 }
-
+#ifdef planA
 void getTheta(){
-    		double sum = 0;
-    		int currTheta;
-    		for(currTheta = 0; currTheta<sampleTheta-1;currTheta++){
-    			heading();
-    			sum += thetaBuff[currTheta];
-    		}
-    		theta = sum/sampleTheta;
-//    		heading(); // Refresh magnetometer values
-    		if(thetaBuf < -90 || thetaBuf > 90){
-    			if (theta > -60 && theta < -30){
-    				CS(change(NEUT[MOTOR],3,MOTOR))
-    				CS(change(NEUT[STEERING],3,STEERING))
-    				CS(change(NEUT[PAN],3,PAN))
-    				__delay_cycles(4000000);
-    				stateM = 2;
-    			}else{
-    				stateM = 3;
-    			}
-    		}else {
-    			if (theta > -180 && theta < -145){
-    				CS(change(NEUT[MOTOR],3,MOTOR))
-    				CS(change(NEUT[STEERING],3,STEERING))
-    				CS(change(NEUT[PAN],3,PAN))
-    				__delay_cycles(4000000);
-    				stateM = 2;
-    			}else{
-    				stateM = 3;
-    			}
-    		}
+//			// Average theta
+//    		double sum = 0;
+//    		int currTheta;
+//    		for(currTheta = 0; currTheta<sampleTheta-1;currTheta++){
+//    			heading();
+//    			sum += thetaBuff[currTheta];
+//    		}
+//    		theta = sum/sampleTheta;
+	heading();
+	if(!BufReady){
+		thetaBuf = theta;
+		isSouth = thetaBuf < -80 || thetaBuf > 135;
+		BufReady = 1;
+	}
 }
+#endif
 
 void track(){
 	// Non-variable parameters
 	static const float gradient = -0.5848;
+	static const int threshold = 500;
+#ifdef TIMED_TURNS
+	static const int turningTime = 135; // PWM_FREQ*Seconds
+#endif
 
-	if(wanted[MOTOR] != 2975){
-		CS(change(2975,3,MOTOR))
-	}
 
 	while(stateM == 2){
 		float alpha = 0.0278*coneArea; // Separation angle in degrees, divided by 180
 		float offset = alpha*MAX[STEERING] + (1-alpha)*MIN[STEERING];
+		if(wanted[MOTOR] != 2975){
+				CS(change(2975,3,MOTOR))
+		}
+#ifdef planA
+		if(coneArea >= 10){
+			isTurning = 1;
+			getTheta();
+		}
+#endif
 
+#ifdef TIMED_TURNS
+		if(!isTiming && coneArea == 11){
+			timingCount = 0;
+			isTiming = 1;
+		}
+
+		if(isTiming && timingCount >= turningTime){
+			CS(change(NEUT[PAN], 1, PAN));
+			__delay_cycles(800000);
+			isTiming = 0;
+		}
+#endif
+
+#ifdef planC
+		if(coneArea == 11){
+			isTurningC = 1;
+			CS(change(NEUT[PAN],3,PAN))
+			coneArea = 0;
+
+		}
+		if(coneArea == 1){
+			isTurningC = 0;
+		}
+#endif
 		int newSteerPwm = (pwm_on[PAN] - MAX[PAN])*gradient + offset;
 
 		// Check PWM boundaries
-		if(newSteerPwm > MAX[STEERING]){
-			newSteerPwm = MAX[STEERING];
-		} // Algorithm will never return values below MIN[STEERING]
+		if(newSteerPwm > MAX[STEERING] - threshold){
+			newSteerPwm = MAX[STEERING] - threshold;
+		}else if(newSteerPwm < MIN[STEERING] + threshold){
+			newSteerPwm = MIN[STEERING] + threshold;
+		}
+
+		if(isTurning){
+			if(isSouth){
+				if (theta > -20 && theta < 40){
+					isTurning = 0;
+					BufReady = 0;
+//						CS(change(NEUT[MOTOR],3,MOTOR))
+					CS(change(NEUT[PAN],3,PAN))
+					newSteerPwm = NEUT[STEERING];
+				}
+			}else { //We're @ north cone
+				if (theta > 165 && theta < -165){
+					isTurning = 0;
+					BufReady = 0;
+//						CS(change(NEUT[MOTOR],3,MOTOR))
+					CS(change(NEUT[PAN],3,PAN))
+					newSteerPwm = NEUT[STEERING];
+				}
+			}
+		}
 
 		CS(change(newSteerPwm,3,STEERING))
+
 		__delay_cycles(2400000);
 	}
 //	thetaBuf = theta;
 }
 
-void turn(){
-	signed int onPan = pwm_on[PAN];
-	signed int neutPan = NEUT[PAN];
-	signed int ts = (onPan - neutPan);
-	ts *= 3;
-	ts /= 5;
-//	ts >>= 1;
-	if (pwm_on[PAN] > NEUT[PAN]){
-		ts -= PWMDIFF;
-	}else{
-		ts += PWMDIFF;
-	}
-	ts = NEUT[STEERING] - ts;
-	change(ts,1,STEERING);
-	__delay_cycles(4000000);
-}
 
 void kill(){
 	WDTCTL &= 0xFFFF;
-}
-
-void search(){
-	change(MIN[PAN],3,PAN);
-	__delay_cycles(3000000);
-	change(MAX[PAN],3,PAN);
-	__delay_cycles(3000000);
 }
 
 void heading(){
@@ -511,7 +550,7 @@ void heading(){
 		tx = 1;
 		TXByteCtr = 1;
 		transmitSetup();
-		PTxData = (unsigned char *)&(TxData[(sizeof TxData)-1]);
+		PTxData = (unsigned char *)&(TxData[(sizeof (TxData))-1]);
 		UCB0CTL1 |= UCTR + UCTXSTT; // I2C TX, start condition
 		__bis_SR_register(CPUOFF + GIE); // Enter LPM0 w/interrupts
 		while (UCB0CTL1 & UCTXSTP); // Ensure stop condition got sent
